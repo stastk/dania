@@ -33,4 +33,10 @@ func AllIngridients() ([]Ingridient, error) {
 		ings = append(ings, ing)
 	}
 
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return ings, nil
+
 }
