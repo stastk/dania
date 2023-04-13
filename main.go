@@ -1,4 +1,4 @@
-package prania
+package main
 
 import (
 	"database/sql"
@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"prania/models"
+	"main/models"
 
 	_ "github.com/lib/pq"
 )
@@ -16,7 +16,8 @@ func main() {
 
 	// Initalize the sql.DB connection pool and assign it to the models.DB
 	// global variable.
-	models.DB, err = sql.Open("postgres", "postgres://user:pass@localhost/bookstore")
+	models.DB, err = sql.Open("postgres", "user=gouser password=gopass dbname=prania_exp sslmode=disable")
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -25,7 +26,7 @@ func main() {
 	http.ListenAndServe(":3000", nil)
 }
 
-// booksIndex sends a HTTP response listing all books.
+// ingridientsIndex sends a HTTP response listing all ingridients.
 func ingridientsIndex(w http.ResponseWriter, r *http.Request) {
 	ings, err := models.AllIngridients()
 	if err != nil {
@@ -35,6 +36,6 @@ func ingridientsIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, ing := range ings {
-		fmt.Fprintf(w, "%s, %s, %s, £%.2f\n", ing.Name, ing.VariationName, ing.UnitOfMeasure, ing.Quantity)
+		fmt.Fprintf(w, "%d : %s\n", ing.Id, ing.Name)
 	}
 }

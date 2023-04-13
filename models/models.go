@@ -7,10 +7,8 @@ import (
 var DB *sql.DB
 
 type Ingridient struct {
-	Name          string
-	VariationName string
-	UnitOfMeasure string
-	Quantity      float32
+	Id   int
+	Name string
 }
 
 func AllIngridients() ([]Ingridient, error) {
@@ -25,7 +23,7 @@ func AllIngridients() ([]Ingridient, error) {
 	for rows.Next() {
 		var ing Ingridient
 
-		err := rows.Scan(&ing.Name, &ing.VariationName, &ing.UnitOfMeasure, &ing.Quantity)
+		err := rows.Scan(&ing.Id, &ing.Name)
 		if err != nil {
 			return nil, err
 		}
