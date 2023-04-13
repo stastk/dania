@@ -23,6 +23,7 @@ func main() {
 	}
 
 	http.HandleFunc("/ingridients", ingridientsIndex)
+	http.HandleFunc("/ingridients_variations", ingvarsIndex)
 	http.ListenAndServe(":3000", nil)
 }
 
@@ -37,5 +38,18 @@ func ingridientsIndex(w http.ResponseWriter, r *http.Request) {
 
 	for _, ing := range ings {
 		fmt.Fprintf(w, "%d : %s\n", ing.Id, ing.Name)
+	}
+}
+
+func ingvarsIndex(w http.ResponseWriter, r *http.Request) {
+	ingvars, err := models.AllIngvars()
+	if err != nil {
+		log.Print(err)
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	for _, ingvar := range ingvars {
+		fmt.Fprintf(w, "%d : %s\n", ingvar.Id, ingvar.Name)
 	}
 }
