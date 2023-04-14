@@ -22,9 +22,38 @@ func main() {
 		log.Fatal(err)
 	}
 
+	http.HandleFunc("/initdb", initDB)
 	http.HandleFunc("/ingridients", ingridientsIndex)
 	http.HandleFunc("/ingridients_variations", ingvarsIndex)
 	http.ListenAndServe(":3000", nil)
+}
+
+// ingridientsIndex sends a HTTP response listing all ingridients.
+func dropDB(w http.ResponseWriter, r *http.Request) {
+	answer, err := models.DropDB()
+	if err != nil {
+		log.Print(err)
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	for _, answer := range answer {
+		fmt.Fprintf(w, "%s\n", answer)
+	}
+}
+
+// ingridientsIndex sends a HTTP response listing all ingridients.
+func initDB(w http.ResponseWriter, r *http.Request) {
+	answer, err := models.InitDB()
+	if err != nil {
+		log.Print(err)
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	for _, answer := range answer {
+		fmt.Fprintf(w, "%s\n", answer)
+	}
 }
 
 // ingridientsIndex sends a HTTP response listing all ingridients.

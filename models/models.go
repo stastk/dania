@@ -19,13 +19,29 @@ type Ingvars struct {
 	IngId int
 }
 
-func InitDB() error {
-	result, err := DB.Query("CREATE DATABASE IF NOT EXISTS " + dbname)
-	if err != nil {
-		return nil, err
-	}
-	defer result.Close()
+var somevar []string
 
+func DropDB() ([]string, error) {
+
+	rows, err := DB.Query("DROP DATABASE " + dbname + " WITH (FORCE);")
+	if err != nil {
+		return somevar, err
+	}
+
+	defer rows.Close()
+
+	return somevar, err
+}
+
+func InitDB() ([]string, error) {
+	rows, err := DB.Query("CREATE DATABASE " + dbname)
+	if err != nil {
+		return somevar, err
+	}
+
+	defer rows.Close()
+
+	return somevar, err
 }
 
 func AllIngridients() ([]Ingridient, error) {
