@@ -26,8 +26,10 @@ func DropDB() ([]string, error) {
 
 	rows, err := DB.Query(
 		`
-		DROP TABLE IF EXISTS test1;
-		DROP TABLE IF EXISTS test2;
+		DROP TABLE IF EXISTS IngridientsToIngridientsVariations;
+		
+		DROP TABLE IF EXISTS Ingridients;
+		DROP TABLE IF EXISTS IngridientsVariants;
 		`)
 	if err != nil {
 		return somevar, err
@@ -42,23 +44,29 @@ func DropDB() ([]string, error) {
 func InitDB() ([]string, error) {
 	rows, err := DB.Query(
 		`
-		CREATE TABLE test1 (
-			id INT PRIMARY KEY,
-			name VARCHAR,
-			description VARCHAR,
-			manufacturer VARCHAR,
-			color VARCHAR,
-			inventory int CHECK (inventory > 0)
-		  );
-		  CREATE TABLE test2 (
-			id INT PRIMARY KEY,
-			name VARCHAR,
-			description VARCHAR,
-			manufacturer VARCHAR,
-			color VARCHAR,
-			inventory int CHECK (inventory > 0)
-		  );
-		  `)
+		CREATE TABLE IF NOT EXISTS Ingridients (
+			id serial PRIMARY KEY,
+			name VARCHAR(50)
+		);
+
+		CREATE TABLE IF NOT EXISTS IngridientsVariants (
+			id serial PRIMARY KEY,
+			name VARCHAR(50)
+		);
+
+		CREATE TABLE IF NOT EXISTS IngridientsToIngridientsVariations (
+			id serial PRIMARY KEY,
+			ingridient_id INT PRIMARY KEY,
+			ingridient_variant_id INT PRIMARY KEY
+		);
+
+
+		ALTER TABLE IngridientsToIngridientsVariations
+			ADD FOREIGN KEY (ingridient_id) REFERENCES Ingridients (id) DEFERRABLE INITIALLY DEFERRED;
+		ALTER TABLE IngridientsToIngridientsVariations
+			ADD FOREIGN KEY (ingridient_variant_id) REFERENCES IngridientsVariants (id) DEFERRABLE INITIALLY DEFERRED;
+		
+		`)
 	if err != nil {
 		return somevar, err
 	}
