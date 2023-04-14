@@ -23,6 +23,7 @@ func main() {
 	}
 
 	http.HandleFunc("/initdb", initDB)
+	http.HandleFunc("/dropdb", dropDB)
 	http.HandleFunc("/ingridients", ingridientsIndex)
 	http.HandleFunc("/ingridients_variations", ingvarsIndex)
 	http.ListenAndServe(":3000", nil)

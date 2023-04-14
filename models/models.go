@@ -21,9 +21,14 @@ type Ingvars struct {
 
 var somevar []string
 
+// Drop all tables #db
 func DropDB() ([]string, error) {
 
-	rows, err := DB.Query("DROP DATABASE " + dbname + " WITH (FORCE);")
+	rows, err := DB.Query(
+		`
+		DROP TABLE IF EXISTS test1;
+		DROP TABLE IF EXISTS test2;
+		`)
 	if err != nil {
 		return somevar, err
 	}
@@ -33,8 +38,27 @@ func DropDB() ([]string, error) {
 	return somevar, err
 }
 
+// Create all tables #db
 func InitDB() ([]string, error) {
-	rows, err := DB.Query("CREATE DATABASE " + dbname)
+	rows, err := DB.Query(
+		`
+		CREATE TABLE test1 (
+			id INT PRIMARY KEY,
+			name VARCHAR,
+			description VARCHAR,
+			manufacturer VARCHAR,
+			color VARCHAR,
+			inventory int CHECK (inventory > 0)
+		  );
+		  CREATE TABLE test2 (
+			id INT PRIMARY KEY,
+			name VARCHAR,
+			description VARCHAR,
+			manufacturer VARCHAR,
+			color VARCHAR,
+			inventory int CHECK (inventory > 0)
+		  );
+		  `)
 	if err != nil {
 		return somevar, err
 	}
