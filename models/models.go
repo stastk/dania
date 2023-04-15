@@ -21,15 +21,15 @@ type Ingvars struct {
 
 var somevar []string
 
+// TODO solve problem with #empty_variables (somevar)
 // Drop all tables #db
 func DropDB() ([]string, error) {
 
 	rows, err := DB.Query(
 		`
 		DROP TABLE IF EXISTS IngridientsToIngridientsVariations;
-		
 		DROP TABLE IF EXISTS Ingridients;
-		DROP TABLE IF EXISTS IngridientsVariants;
+		DROP TABLE IF EXISTS IngridientsVariations;
 		`)
 	if err != nil {
 		return somevar, err
@@ -49,7 +49,7 @@ func InitDB() ([]string, error) {
 			name VARCHAR(50) NOT NULL
 		);
 
-		CREATE TABLE IF NOT EXISTS IngridientsVariants (
+		CREATE TABLE IF NOT EXISTS IngridientsVariations (
 			id serial PRIMARY KEY,
 			name VARCHAR(50) NOT NULL
 		);
@@ -59,8 +59,29 @@ func InitDB() ([]string, error) {
 			ingridient_variation_id int NOT NULL,
 			PRIMARY KEY (ingridien_id, ingridient_variation_id),
 			FOREIGN KEY (ingridien_id) REFERENCES Ingridients(id) ON UPDATE CASCADE,
-			FOREIGN KEY (ingridient_variation_id) REFERENCES IngridientsVariants(id) ON UPDATE CASCADE
+			FOREIGN KEY (ingridient_variation_id) REFERENCES IngridientsVariations(id) ON UPDATE CASCADE
 		);
+
+		INSERT INTO Ingridients
+			("id", "name")
+			VALUES
+			('1', 'Ganash'),
+			('2', 'Salt'),
+			('3', 'Pepper');
+			
+			INSERT INTO IngridientsVariations
+			("id", "name")
+			VALUES
+			('1', 'Ganash of the north'),
+			('2', 'Salt of the sea'),
+			('3', 'Pepper of the Iron Man');
+
+			INSERT INTO IngridientsToIngridientsVariations
+			("ingridien_id", "ingridient_variation_id")
+			VALUES
+			('1', '3'),
+			('1', '2'),
+			('2', '3');
 		`)
 
 	if err != nil {
@@ -73,7 +94,7 @@ func InitDB() ([]string, error) {
 }
 
 func AllIngridients() ([]Ingridient, error) {
-	rows, err := DB.Query("SELECT * FROM ingridients")
+	rows, err := DB.Query(`SELECT * FROM Ingridients`)
 	if err != nil {
 		return nil, err
 	}

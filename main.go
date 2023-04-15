@@ -71,6 +71,7 @@ func ingridientsIndex(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ingridientsIndex sends a HTTP response listing all ingridients variations.
 func ingvarsIndex(w http.ResponseWriter, r *http.Request) {
 	ingvars, err := models.AllIngvars()
 	if err != nil {
