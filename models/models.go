@@ -46,27 +46,23 @@ func InitDB() ([]string, error) {
 		`
 		CREATE TABLE IF NOT EXISTS Ingridients (
 			id serial PRIMARY KEY,
-			name VARCHAR(50)
+			name VARCHAR(50) NOT NULL
 		);
 
 		CREATE TABLE IF NOT EXISTS IngridientsVariants (
 			id serial PRIMARY KEY,
-			name VARCHAR(50)
+			name VARCHAR(50) NOT NULL
 		);
 
 		CREATE TABLE IF NOT EXISTS IngridientsToIngridientsVariations (
-			id serial PRIMARY KEY,
-			ingridient_id INT PRIMARY KEY,
-			ingridient_variant_id INT PRIMARY KEY
+			ingridien_id int NOT NULL,
+			ingridient_variation_id int NOT NULL,
+			PRIMARY KEY (ingridien_id, ingridient_variation_id),
+			FOREIGN KEY (ingridien_id) REFERENCES Ingridients(id) ON UPDATE CASCADE,
+			FOREIGN KEY (ingridient_variation_id) REFERENCES IngridientsVariants(id) ON UPDATE CASCADE
 		);
-
-
-		ALTER TABLE IngridientsToIngridientsVariations
-			ADD FOREIGN KEY (ingridient_id) REFERENCES Ingridients (id) DEFERRABLE INITIALLY DEFERRED;
-		ALTER TABLE IngridientsToIngridientsVariations
-			ADD FOREIGN KEY (ingridient_variant_id) REFERENCES IngridientsVariants (id) DEFERRABLE INITIALLY DEFERRED;
-		
 		`)
+
 	if err != nil {
 		return somevar, err
 	}
