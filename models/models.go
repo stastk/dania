@@ -67,20 +67,30 @@ func InitDB() ([]string, error) {
 			VALUES
 			('1', 'Ganash'),
 			('2', 'Salt'),
-			('3', 'Pepper');
+			('3', 'Pepper'),
+			('4', 'Milk');
 			
 			INSERT INTO IngridientsVariations
 			("id", "name")
 			VALUES
 			('1', 'Ganash of the north'),
-			('2', 'Salt of the sea'),
-			('3', 'Pepper of the Iron Man');
+			('2', 'Ganash of the south'),
+			('3', 'Salt of the sea'),
+			('4', 'Ganash of the west'),
+			('5', 'Pepper of the Iron Man'),
+			('6', 'Ganash of the north'),
+			('7', 'Ganash of the east'),
+			('8', 'Dr.Pepper');
 
 			INSERT INTO IngridientsToIngridientsVariations
 			("ingridien_id", "ingridient_variation_id")
 			VALUES
-			('1', '3'),
+			('3', '8'),
 			('1', '2'),
+			('1', '4'),
+			('1', '6'),
+			('1', '7'),
+			('3', '5'),
 			('2', '3');
 		`)
 
