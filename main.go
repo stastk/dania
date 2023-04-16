@@ -69,6 +69,6 @@ func ingridientsIndex(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(ings)
 
 	for _, ing := range ings {
-		fmt.Fprintf(w, "%d : %s\n", ing.Id, ing.Name)
+		fmt.Fprintf(w, "%d : %s : %v\n", ing.Id, ing.Name, ing.Variations)
 	}
 }

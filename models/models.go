@@ -2,7 +2,6 @@ package models
 
 import (
 	"database/sql"
-	"fmt"
 )
 
 var DB *sql.DB
@@ -13,10 +12,6 @@ type Ingridient struct {
 	Id         int    `json:"id"`
 	Name       string `json:"name"`
 	Variations string `json:"variations"`
-	// Variations []struct {
-	// 	Id   int    `json:"id"`
-	// 	Name string `json:"name"`
-	// } `json:"variations"`
 }
 
 var somevar []string
@@ -117,12 +112,13 @@ func AllIngridients() ([]Ingridient, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var ings []Ingridient
 	for rows.Next() {
 		var ing Ingridient
-		fmt.Println(&ing.Variations)
+
 		err := rows.Scan(&ing.Id, &ing.Name, &ing.Variations)
 		if err != nil {
 			return nil, err
