@@ -9,14 +9,12 @@ var DB *sql.DB
 var dbname = "prania_exp"
 
 type Ingridient struct {
-	Id   int
-	Name string
-}
-
-type Ingvars struct {
-	Id    int
-	Name  string
-	IngId int
+	Id         int    `json:"id"`
+	Name       string `json:"name"`
+	Variations []struct {
+		Id   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"variations"`
 }
 
 var somevar []string
@@ -24,7 +22,6 @@ var somevar []string
 // TODO solve problem with #empty_variables (somevar)
 // Drop all tables #db
 func DropDB() ([]string, error) {
-
 	rows, err := DB.Query(
 		`
 		DROP TABLE IF EXISTS IngridientsToIngridientsVariations;
@@ -104,46 +101,26 @@ func InitDB() ([]string, error) {
 }
 
 func AllIngridients() ([]Ingridient, error) {
-	rows, err := DB.Query(`SELECT * FROM Ingridients`)
+	rows, err := DB.Query(`
+	SELECT
+		i.id,
+		i.name,
+		jsonb_agg(v) as variations
+		FROM Ingridients i
+		LEFT JOIN IngridientsToIngridientsVariations ivar ON i.id = ivar.ingridien_id
+		LEFT JOIN IngridientsVariations v ON ivar.ingridient_variation_id = v.id
+		GROUP BY i.id;
+	`)
+
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
 	var ings []Ingridient
-
 	for rows.Next() {
 		var ing Ingridient
-
-		err := rows.Scan(&ing.Id, &ing.Name)
-		if err != nil {
-			return nil, err
-		}
-
-		ings = append(ings, ing)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return ings, nil
-
-}
-
-func AllIngvars() ([]Ingridient, error) {
-	rows, err := DB.Query("SELECT * FROM ingridients")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var ings []Ingridient
-
-	for rows.Next() {
-		var ing Ingridient
-
-		err := rows.Scan(&ing.Id, &ing.Name)
+		err := rows.Scan(&ing.Id, &ing.Name, &ing.Variations)
 		if err != nil {
 			return nil, err
 		}
