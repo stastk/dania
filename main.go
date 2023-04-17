@@ -23,10 +23,41 @@ func main() {
 		log.Fatal(err)
 	}
 
+	http.HandleFunc("/testc", call)
+
 	http.HandleFunc("/initdb", initDB)
 	http.HandleFunc("/dropdb", dropDB)
 	http.HandleFunc("/ingridients", ingridientsIndex)
 	http.ListenAndServe(":3000", nil)
+
+}
+
+func call(w http.ResponseWriter, r *http.Request) {
+	answer, err := models.Call()
+	if err != nil {
+		log.Print(err)
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	// for _, answer := range answer {
+	// 	//fmt.Printf("%+v\n", answer)
+	// 	fmt.Fprintf(w, `id:%d, name:"%s", variations:%v`, answer.Id, answer.Name, answer.Variations)
+	// }
+
+	w.Header().Set("Content-Type", "application/json")
+
+	//>>>>
+	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-Type", "application/json")
+	jsonResp, err := json.Marshal(answer)
+	if err != nil {
+		log.Fatalf("Error happened in JSON marshal. Err: %s", err)
+	}
+	w.Write(jsonResp)
+	return
+	//<<<<
+
 }
 
 // ingridientsIndex sends a HTTP response listing all ingridients.
