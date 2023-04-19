@@ -23,8 +23,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	http.HandleFunc("/testc", call)
-
 	http.HandleFunc("/initdb", initDB)
 	http.HandleFunc("/dropdb", dropDB)
 	http.HandleFunc("/ingridients", ingridientsIndex)
@@ -32,22 +30,14 @@ func main() {
 
 }
 
-func call(w http.ResponseWriter, r *http.Request) {
-	answer, err := models.Call()
+func ingridientsIndex(w http.ResponseWriter, r *http.Request) {
+	answer, err := models.AllIngridients()
 	if err != nil {
 		log.Print(err)
 		http.Error(w, http.StatusText(500), 500)
 		return
 	}
 
-	// for _, answer := range answer {
-	// 	//fmt.Printf("%+v\n", answer)
-	// 	fmt.Fprintf(w, `id:%d, name:"%s", variations:%v`, answer.Id, answer.Name, answer.Variations)
-	// }
-
-	w.Header().Set("Content-Type", "application/json")
-
-	//>>>>
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
 	jsonResp, err := json.Marshal(answer)
@@ -56,7 +46,6 @@ func call(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write(jsonResp)
 	return
-	//<<<<
 
 }
 
@@ -85,21 +74,5 @@ func initDB(w http.ResponseWriter, r *http.Request) {
 
 	for _, answer := range answer {
 		fmt.Fprintf(w, "%s\n", answer)
-	}
-}
-
-// ingridientsIndex sends a HTTP response listing all ingridients.
-func ingridientsIndex(w http.ResponseWriter, r *http.Request) {
-	ings, err := models.AllIngridients()
-	if err != nil {
-		log.Print(err)
-		http.Error(w, http.StatusText(500), 500)
-		return
-	}
-
-	err = json.NewEncoder(w).Encode(ings)
-
-	for _, ing := range ings {
-		fmt.Fprintf(w, "%d : %s : %v\n", ing.Id, ing.Name, ing.Variations)
 	}
 }

@@ -3,14 +3,12 @@ package models
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
-// >>>>>>>>>
 var schema = `
 CREATE TABLE person (
     first_name text,
@@ -24,31 +22,34 @@ CREATE TABLE place (
     telcode integer
 )`
 
+// Temporary struct for getting Variations
 type IngridientWithVariations struct {
 	Id         int    `db:"id" json:"id"`
 	Name       string `db:"name" json:"name"`
 	Variations string `db:"variations" json:"variations"`
 }
 
+// Ingridient and all Variations attached to it
 type Ingridient struct {
 	Id         int         `db:"id" json:"id"`
 	Name       string      `db:"json" json:"name"`
 	Variations []Variation `db:"variations" json:"variations"`
 }
 
+// Variation of specific Ingridient
 type Variation struct {
 	Id   int    `db:"id" json:"id"`
 	Name string `db:"name" json:"name"`
 }
 
-func Call() ([]Ingridient, error) {
+// All Ingridients with their Variations
+func AllIngridients() ([]Ingridient, error) {
 	db, err := sqlx.Connect("postgres", "user=gouser password=gopass dbname=prania_exp sslmode=disable")
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	allthings := []Ingridient{}
-	//ttte := []Variation{}
 	rows, err := db.Queryx(`
 		SELECT
 			i.id,
@@ -68,13 +69,13 @@ func Call() ([]Ingridient, error) {
 		}
 
 		in := []byte(record.Variations)
-		detailsEntity := []Variation{}
-		err := json.Unmarshal(in, &detailsEntity)
+		variations := []Variation{}
+		err := json.Unmarshal(in, &variations)
 		if err != nil {
 			log.Print(err)
 		}
 
-		toappend := Ingridient{record.Id, record.Name, detailsEntity}
+		toappend := Ingridient{record.Id, record.Name, variations}
 		allthings = append(allthings, toappend)
 	}
 
@@ -85,8 +86,6 @@ func Call() ([]Ingridient, error) {
 	return allthings, nil
 
 }
-
-// <<<<<<<<<
 
 var DB *sql.DB
 
@@ -155,41 +154,4 @@ func InitDB() ([]string, error) {
 	defer rows.Close()
 
 	return somevar, err
-}
-
-func AllIngridients() ([]IngridientWithVariations, error) {
-	rows, err := DB.Query(`
-		SELECT
-			i.id,
-			i.name,
-			jsonb_agg(v) as variations
-			FROM Ingridients i
-			LEFT JOIN IngridientsVariations v ON v.ingridient_id = i.id
-			GROUP BY i.id;
-	`)
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	var ings []IngridientWithVariations
-	for rows.Next() {
-		var ingridient IngridientWithVariations
-		fmt.Println(&ingridient.Variations)
-		err := rows.Scan(&ingridient.Id, &ingridient.Name, &ingridient.Variations)
-		if err != nil {
-			return nil, err
-		}
-
-		ings = append(ings, ingridient)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return ings, nil
-
 }
