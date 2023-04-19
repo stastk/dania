@@ -27,7 +27,7 @@ var schema = `
 	);
 	`
 
-// Temporary struct for getting Variations
+// Temporary struct for getting Variations as string
 type IngridientWithVariations struct {
 	Id         int    `db:"id" json:"id"`
 	Name       string `db:"name" json:"name"`
@@ -50,7 +50,7 @@ type Variation struct {
 // All Ingridients with their Variations
 func AllIngridients() ([]Ingridient, error) {
 
-	allthings := []Ingridient{}
+	ingridients := []Ingridient{}
 	rows, err := DBpr.Queryx(`
 		SELECT
 			i.id,
@@ -75,24 +75,27 @@ func AllIngridients() ([]Ingridient, error) {
 		in := []byte(record.Variations)
 		variations := []Variation{}
 		err := json.Unmarshal(in, &variations)
+
 		if err != nil {
 			log.Print(err)
 		}
+		// TODO remove [null] as part of array
+		if record.Variations != "[null]" {
+			toappend := Ingridient{record.Id, record.Name, variations}
+			ingridients = append(ingridients, toappend)
+		}
 
-		toappend := Ingridient{record.Id, record.Name, variations}
-		allthings = append(allthings, toappend)
 	}
 
 	if err := rows.Err(); err != nil {
 		panic(err)
 	}
 
-	return allthings, nil
+	return ingridients, nil
 
 }
 
-// TODO solve problem with #empty_variables (somevar)
-// Drop all tables #db
+// Drop tables #db
 func DropDB() (string, error) {
 	answer, err := DBpr.Queryx(`
 		DROP TABLE IF EXISTS IngridientsVariations;
@@ -107,11 +110,13 @@ func DropDB() (string, error) {
 	return "Drop table -done", err
 }
 
+// Create tables without anything #db
 func InitDB() (string, error) {
 	DBpr.MustExec(schema)
 	return "Create table -done", nil
 }
 
+// Populate tables with some data #db
 func PopulateDB() (string, error) {
 	tx := DBpr.MustBegin()
 	tx.MustExec(`
