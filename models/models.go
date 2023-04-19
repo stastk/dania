@@ -1,7 +1,6 @@
 package models
 
 import (
-	"database/sql"
 	"encoding/json"
 	"log"
 
@@ -13,10 +12,6 @@ var DBpr *sqlx.DB
 var DBname = "prania_exp"
 var DBusername = "gouser"
 var DBusepassword = "gopassword"
-
-var DB *sql.DB
-
-var dbname = "prania_exp"
 
 var schema = `
 	CREATE TABLE IF NOT EXISTS Ingridients (
@@ -96,32 +91,28 @@ func AllIngridients() ([]Ingridient, error) {
 
 }
 
-var somevar []string
-
 // TODO solve problem with #empty_variables (somevar)
 // Drop all tables #db
-func DropDB() ([]string, error) {
-	rows, err := DB.Query(`
+func DropDB() (string, error) {
+	answer, err := DBpr.Queryx(`
 		DROP TABLE IF EXISTS IngridientsVariations;
 		DROP TABLE IF EXISTS Ingridients;
 	`)
 	if err != nil {
-		return somevar, err
+		return "", err
 	}
 
-	defer rows.Close()
+	defer answer.Close()
 
-	return somevar, err
+	return "Drop table -done", err
 }
 
-func InitDB() ([]string, error) {
-
+func InitDB() (string, error) {
 	DBpr.MustExec(schema)
-	return somevar, nil
-
+	return "Create table -done", nil
 }
 
-func PopulateDB() ([]string, error) {
+func PopulateDB() (string, error) {
 	tx := DBpr.MustBegin()
 	tx.MustExec(`
 		INSERT INTO Ingridients
@@ -145,5 +136,5 @@ func PopulateDB() ([]string, error) {
 			('Dr.Pepper', 3);
 	`)
 	tx.Commit()
-	return somevar, nil
+	return "Populate -done", nil
 }
