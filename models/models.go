@@ -24,46 +24,11 @@ CREATE TABLE place (
     telcode integer
 )`
 
-type Person struct {
-	FirstName string `db:"first_name"`
-	LastName  string `db:"last_name"`
-	Email     string
-}
-
-type Place struct {
-	Country string
-	City    sql.NullString
-	TelCode int
-}
-
-//	type IngridientWithVariations struct {
-//		Id         int    `db:"id" json:"id"`
-//		Name       string `db:"name" json:"name"`
-//		Variations []struct {
-//			Id   int    `db:"id" json:"id"`
-//			Name string `db:"name" json:"name"`
-//		} `db:"variations" json:"variations"`
-//	}
-//
-//	type Exp struct {
-//		Id         int    `db:"id" json:"id"`
-//		Name       string `db:"name" json:"name"`
-//		Variations []struct {
-//			Id   int    `db:"id" json:"id"`
-//			Name string `db:"name" json:"name"`
-//		} `db:"variations" json:"variations"`
-//	}
 type IngridientWithVariations struct {
 	Id         int    `db:"id" json:"id"`
 	Name       string `db:"name" json:"name"`
 	Variations string `db:"variations" json:"variations"`
 }
-
-// type IngridientWithVariations struct {
-// 	Id         int         `db:"id" json:"id"`
-// 	Name       string      `db:"name" json:"name"`
-// 	Variations []Variation `db:"variations" json:"variations"`
-// }
 
 type Ingridient struct {
 	Id         int         `db:"id" json:"id"`
@@ -75,14 +40,6 @@ type Variation struct {
 	Id   int    `db:"id" json:"id"`
 	Name string `db:"name" json:"name"`
 }
-
-// func (t *Variation) Scan(val interface{}) error { // need only for Variation
-// 	return json.Unmarshal(val.([]byte), &t)
-// }
-
-// func (t *Variation) Value() (driver.Value, error) { // need only for Variation
-// 	return json.Marshal(t)
-// }
 
 func Call() ([]Ingridient, error) {
 	db, err := sqlx.Connect("postgres", "user=gouser password=gopass dbname=prania_exp sslmode=disable")
@@ -117,14 +74,7 @@ func Call() ([]Ingridient, error) {
 			log.Print(err)
 		}
 
-		//var v Variation
-		//var varr []Variation
-
 		toappend := Ingridient{record.Id, record.Name, detailsEntity}
-
-		// sss, _ := json.MarshalIndent(ttte, "", "\t")
-		// fmt.Print(string(sss))
-		// //allthings = append(allthings, record)
 		allthings = append(allthings, toappend)
 	}
 
@@ -132,8 +82,6 @@ func Call() ([]Ingridient, error) {
 		panic(err)
 	}
 
-	// fmt.Println(fmt.Sprintf("%v", ttte))
-	// fmt.Printf("%s\n", ttte)
 	return allthings, nil
 
 }
