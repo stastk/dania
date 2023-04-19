@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -43,24 +44,31 @@ type Place struct {
 //			Name string `db:"name" json:"name"`
 //		} `db:"variations" json:"variations"`
 //	}
-type Exp struct {
-	Id         int    `db:"id" json:"id"`
-	Name       string `db:"name" json:"name"`
-	Variations []struct {
-		Id   int    `db:"id" json:"id"`
-		Name string `db:"name" json:"name"`
-	} `db:"variations" json:"variations"`
-}
+//
+//	type Exp struct {
+//		Id         int    `db:"id" json:"id"`
+//		Name       string `db:"name" json:"name"`
+//		Variations []struct {
+//			Id   int    `db:"id" json:"id"`
+//			Name string `db:"name" json:"name"`
+//		} `db:"variations" json:"variations"`
+//	}
 type IngridientWithVariations struct {
 	Id         int    `db:"id" json:"id"`
 	Name       string `db:"name" json:"name"`
 	Variations string `db:"variations" json:"variations"`
 }
 
+// type IngridientWithVariations struct {
+// 	Id         int         `db:"id" json:"id"`
+// 	Name       string      `db:"name" json:"name"`
+// 	Variations []Variation `db:"variations" json:"variations"`
+// }
+
 type Ingridient struct {
-	Id         int    `json:"id"`
-	Name       string `json:"name"`
-	Variations string `json:"variations"`
+	Id         int         `db:"id" json:"id"`
+	Name       string      `db:"json" json:"name"`
+	Variations []Variation `db:"variations" json:"variations"`
 }
 
 type Variation struct {
@@ -76,13 +84,14 @@ type Variation struct {
 // 	return json.Marshal(t)
 // }
 
-func Call() ([]IngridientWithVariations, error) {
+func Call() ([]Ingridient, error) {
 	db, err := sqlx.Connect("postgres", "user=gouser password=gopass dbname=prania_exp sslmode=disable")
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	allthings := []IngridientWithVariations{}
+	allthings := []Ingridient{}
+	//ttte := []Variation{}
 	rows, err := db.Queryx(`
 		SELECT
 			i.id,
@@ -101,13 +110,30 @@ func Call() ([]IngridientWithVariations, error) {
 			panic(err)
 		}
 
-		allthings = append(allthings, record)
+		in := []byte(record.Variations)
+		detailsEntity := []Variation{}
+		err := json.Unmarshal(in, &detailsEntity)
+		if err != nil {
+			log.Print(err)
+		}
+
+		//var v Variation
+		//var varr []Variation
+
+		toappend := Ingridient{record.Id, record.Name, detailsEntity}
+
+		// sss, _ := json.MarshalIndent(ttte, "", "\t")
+		// fmt.Print(string(sss))
+		// //allthings = append(allthings, record)
+		allthings = append(allthings, toappend)
 	}
 
 	if err := rows.Err(); err != nil {
 		panic(err)
 	}
 
+	// fmt.Println(fmt.Sprintf("%v", ttte))
+	// fmt.Printf("%s\n", ttte)
 	return allthings, nil
 
 }
