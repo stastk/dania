@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"main/models"
 
+	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
@@ -20,10 +22,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	http.HandleFunc("/initdb", initDB)
-	http.HandleFunc("/dropdb", dropDB)
-	http.HandleFunc("/popdb", populateDB)
-	http.HandleFunc("/ingridients", ingridientsIndex)
+	r := mux.NewRouter()
+
+	r.HandleFunc("/initdb", initDB)
+	r.HandleFunc("/dropdb", dropDB)
+	r.HandleFunc("/popdb/{count}", populateDB)
+	r.HandleFunc("/ingridients", ingridientsIndex)
+	http.Handle("/", r)
 	http.ListenAndServe(":3000", nil)
 
 }
@@ -71,7 +76,13 @@ func initDB(w http.ResponseWriter, r *http.Request) {
 
 // ingridientsIndex sends a HTTP response listing all ingridients.
 func populateDB(w http.ResponseWriter, r *http.Request) {
-	answer, err := models.PopulateDB()
+	vars := mux.Vars(r)
+	w.WriteHeader(http.StatusOK)
+	count, err := strconv.Atoi(vars["count"])
+
+	fmt.Fprintf(w, "Count: %v\n", count)
+	fmt.Println("count =>", vars["count"])
+	answer, err := models.PopulateDB(count)
 	if err != nil {
 		log.Print(err)
 		http.Error(w, http.StatusText(500), 500)
