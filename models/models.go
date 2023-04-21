@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"math/rand"
 	"strconv"
@@ -40,14 +39,19 @@ type IngridientWithVariations struct {
 // Ingridient and all Variations attached to it
 type Ingridient struct {
 	Id         int         `db:"id" json:"id"`
-	Name       string      `db:"json" json:"name"`
+	Name       string      `db:"name" json:"name"`
 	Variations []Variation `db:"variations" json:"variations"`
+}
+
+type IngGroup struct {
+	Ingridient *Ingridient `db:"ingridient" json:"ingridient"`
 }
 
 // Variation of specific Ingridient
 type Variation struct {
-	Id   int    `db:"id" json:"id"`
-	Name string `db:"name" json:"name"`
+	Id           int    `db:"id" json:"id"`
+	Name         string `db:"name" json:"name"`
+	IngridientId int    `db:"ingridient_id" json:"ingridient_id"`
 }
 
 // All Ingridients with their Variations
@@ -149,55 +153,50 @@ func InitDB() (string, error) {
 }
 
 // Populate tables with some data #db
-func PopulateDB(count int) (string, error) {
-	fmt.Println("COUNT:")
-	fmt.Println(count)
+func PopulateDB(count int, minchild int, maxchild int) (string, error) {
+	var err error
 
-	rows, err := DBpr.Queryx(`
-		SELECT id from Ingridients order by id desc limit 1;
-	`)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-
+	// TODO refactoring needed
 	min := 4
 	max := 16
 
 	const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-	var valsIngridients string
-	var valsVariants string
+	tx := DBpr.MustBegin()
 
 	for i := 0; i < count; i++ {
-		randomInt := rand.Intn(max-min) + min
-		randomName := make([]byte, randomInt)
+		//randomChildCount := make([]byte, rand.Intn(maxchild-minchild)+minchild)
+		randomChildCount := rand.Intn(maxchild-minchild) + minchild
+		randomName := make([]byte, rand.Intn(max-min)+min)
 		for li := range randomName {
 			randomName[li] = letterBytes[rand.Int63()%int64(len(letterBytes))]
 		}
-		fmt.Println(string(randomName))
-		if i+1 == count {
-			valsIngridients = valsIngridients + "('" + string(randomName) + "');\n"
-			valsVariants = valsVariants + "('" + string(randomName) + "," + strconv.Itoa(i) + " of " + strconv.Itoa(count) + "', " + strconv.Itoa(1) + ");\n"
-		} else {
-			valsIngridients = valsIngridients + "('" + string(randomName) + "'),\n"
-			valsVariants = valsVariants + "('" + string(randomName) + "," + strconv.Itoa(i) + " of " + strconv.Itoa(count) + "', " + strconv.Itoa(1) + "),\n"
+
+		var ingridient Ingridient
+		var variation Variation
+
+		// Create some Ingridients
+		err = tx.QueryRowx(`INSERT INTO Ingridients (name) VALUES ($1) RETURNING *;`, randomName).StructScan(&ingridient)
+		if err != nil {
+			tx.Rollback()
+			return "", err
+		}
+		log.Println("Ingridient:: ", ingridient.Id, ingridient.Name)
+
+		for ich := 0; ich < randomChildCount; ich++ {
+			// Add to createt earlier Ingridients Variations
+			err = tx.QueryRowx(`INSERT INTO IngridientsVariations (name, ingridient_id) VALUES ($1, $2) RETURNING *;`, string(randomName)+"_"+strconv.Itoa(ich), ingridient.Id).StructScan(&variation)
+			if err != nil {
+				tx.Rollback()
+				return "", err
+			}
+			log.Println("| ")
+			log.Println(" -----: ", variation.IngridientId, variation.Name)
 		}
 
 	}
 
-	tx := DBpr.MustBegin()
-	tx.MustExec(`
-		INSERT INTO Ingridients
-			(name)
-		VALUES
-		` + valsIngridients + `
-
-		INSERT INTO IngridientsVariations
-			(name, ingridient_id)
-		VALUES 
-		` + valsVariants + `
-	`)
 	tx.Commit()
+
 	return "Populate -done", nil
 }

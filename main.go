@@ -26,7 +26,7 @@ func main() {
 
 	r.HandleFunc("/initdb", initDB)
 	r.HandleFunc("/dropdb", dropDB)
-	r.HandleFunc("/popdb/{count}", populateDB)
+	r.HandleFunc("/popdb/{count}/{minchild}/{maxchild}", populateDB)
 	r.HandleFunc("/ingridients", ingridientsIndex)
 	http.Handle("/", r)
 	http.ListenAndServe(":3000", nil)
@@ -79,10 +79,15 @@ func populateDB(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
 	count, err := strconv.Atoi(vars["count"])
+	minchild, err := strconv.Atoi(vars["minchild"])
+	if minchild < 1 {
+		minchild = 1
+	}
+	maxchild, err := strconv.Atoi(vars["maxchild"])
 
 	fmt.Fprintf(w, "Count: %v\n", count)
 	fmt.Println("count =>", vars["count"])
-	answer, err := models.PopulateDB(count)
+	answer, err := models.PopulateDB(count, minchild, maxchild)
 	if err != nil {
 		log.Print(err)
 		http.Error(w, http.StatusText(500), 500)
