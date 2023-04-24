@@ -62,6 +62,57 @@ type Variation struct {
 }
 
 // All Ingridients with their Variations
+func IngridientShow(id int) ([]Ingridient, error) {
+
+	ingridients := []Ingridient{}
+
+	rows, err := DBpr.Queryx(`
+		SELECT
+			i.id,
+			i.name,
+			COALESCE(json_agg(v) FILTER (WHERE v.id IS NOT NULL), '[]') AS variations
+			FROM Ingridients i
+			LEFT JOIN IngridientsVariations v ON v.ingridient_id = i.id
+			WHERE i.id = ` + strconv.Itoa(id) + `
+			GROUP BY i.id;
+	`)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var record IngridientWithVariations
+		var toappend Ingridient
+
+		if err := rows.StructScan(&record); err != nil {
+			panic(err)
+		}
+
+		in := []byte(record.Variations)
+		variations := []Variation{}
+		err := json.Unmarshal(in, &variations)
+
+		if err != nil {
+			log.Print(err)
+		}
+
+		toappend = Ingridient{record.Id, record.Name, variations}
+
+		ingridients = append(ingridients, toappend)
+
+	}
+
+	if err := rows.Err(); err != nil {
+		panic(err)
+	}
+
+	return ingridients, nil
+
+}
+
+// All Ingridients with their Variations
 func AllIngridients() ([]Ingridient, error) {
 
 	ingridients := []Ingridient{}
@@ -96,7 +147,7 @@ func AllIngridients() ([]Ingridient, error) {
 		if err != nil {
 			log.Print(err)
 		}
-		// TODO remove [null] as part of array
+
 		toappend = Ingridient{record.Id, record.Name, variations}
 
 		ingridients = append(ingridients, toappend)

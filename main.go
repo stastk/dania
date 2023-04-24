@@ -28,8 +28,34 @@ func main() {
 	r.HandleFunc("/dropdb", dropDB)
 	r.HandleFunc("/popdb/{count}/{minchild}/{maxchild}", populateDB)
 	r.HandleFunc("/ingridients", ingridientsIndex)
+	r.HandleFunc("/ingridient/{id}", ingridientShow)
 	http.Handle("/", r)
 	http.ListenAndServe(":3000", nil)
+
+}
+
+func ingridientShow(w http.ResponseWriter, r *http.Request) {
+
+	vars := mux.Vars(r)
+	w.WriteHeader(http.StatusOK)
+	id, err := strconv.Atoi(vars["id"])
+
+	answer, err := models.IngridientShow(id)
+	if err != nil {
+		log.Print(err)
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	jsonResp, err := json.Marshal(answer)
+	if err != nil {
+		log.Fatalf("Error happened in JSON marshal. Err: %s", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Add("Content-Type", "application/json")
+	w.Write(jsonResp)
 
 }
 
@@ -48,6 +74,8 @@ func ingridientsIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Add("Content-Type", "application/json")
+
 	w.Write(jsonResp)
 
 }
