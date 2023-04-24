@@ -10,20 +10,31 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// Config //
+
 var DBpr *sqlx.DB
+
+// Test DB name
 var DBname = "prania_exp"
+
+// Test DB username
 var DBusername = "gouser"
+
+// Test DB password
 var DBusepassword = "gopassword"
 
+var err error
+
+// TODO schema must be placed into another file
 var schema = `
 	CREATE TABLE IF NOT EXISTS Ingridients (
 		id serial PRIMARY KEY,
-		name VARCHAR(50) NOT NULL
+		name VARCHAR(50) UNIQUE NOT NULL
 	);
 
 	CREATE TABLE IF NOT EXISTS IngridientsVariations (
 		id serial PRIMARY KEY,
-		name VARCHAR(50) NOT NULL,
+		name VARCHAR(50) UNIQUE NOT NULL,
 		ingridient_id int NOT NULL,
 		FOREIGN KEY (ingridient_id) REFERENCES Ingridients(id) ON UPDATE CASCADE
 	);
@@ -43,10 +54,6 @@ type Ingridient struct {
 	Variations []Variation `db:"variations" json:"variations"`
 }
 
-type IngGroup struct {
-	Ingridient *Ingridient `db:"ingridient" json:"ingridient"`
-}
-
 // Variation of specific Ingridient
 type Variation struct {
 	Id           int    `db:"id" json:"id"`
@@ -63,11 +70,12 @@ func AllIngridients() ([]Ingridient, error) {
 		SELECT
 			i.id,
 			i.name,
-			jsonb_agg(v) as variations
+			COALESCE(json_agg(v) FILTER (WHERE v.id IS NOT NULL), '[]') AS variations
 			FROM Ingridients i
 			LEFT JOIN IngridientsVariations v ON v.ingridient_id = i.id
 			GROUP BY i.id;
 	`)
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -75,6 +83,7 @@ func AllIngridients() ([]Ingridient, error) {
 
 	for rows.Next() {
 		var record IngridientWithVariations
+		var toappend Ingridient
 
 		if err := rows.StructScan(&record); err != nil {
 			panic(err)
@@ -88,10 +97,9 @@ func AllIngridients() ([]Ingridient, error) {
 			log.Print(err)
 		}
 		// TODO remove [null] as part of array
-		if record.Variations != "[null]" {
-			toappend := Ingridient{record.Id, record.Name, variations}
-			ingridients = append(ingridients, toappend)
-		}
+		toappend = Ingridient{record.Id, record.Name, variations}
+
+		ingridients = append(ingridients, toappend)
 
 	}
 
@@ -133,6 +141,8 @@ func InitDB() (string, error) {
 			('Ganash'),
 			('Salt'),
 			('Pepper'),
+			('Onion'),
+			('Sugar'),
 			('Milk');
 
 		INSERT INTO IngridientsVariations
@@ -143,18 +153,21 @@ func InitDB() (string, error) {
 			('Salt of the sea', 2),
 			('Ganash of the west', 1),
 			('Pepper of the Iron Man', 3),
-			('Ganash of the north', 1),
 			('Ganash of the east', 1),
+			('Chilli pepper', 3),
+			('Pepper', 3),
+			('Red hot', 3),
+			('Spicy pepper', 3),
 			('Dr.Pepper', 3);
 	`)
+
 	tx.Commit()
 
-	return "Create table -done", nil
+	return "Create tables -done", nil
 }
 
 // Populate tables with some data #db
 func PopulateDB(count int, minchild int, maxchild int) (string, error) {
-	var err error
 
 	// TODO refactoring needed
 	min := 4
@@ -165,7 +178,6 @@ func PopulateDB(count int, minchild int, maxchild int) (string, error) {
 	tx := DBpr.MustBegin()
 
 	for i := 0; i < count; i++ {
-		//randomChildCount := make([]byte, rand.Intn(maxchild-minchild)+minchild)
 		randomChildCount := rand.Intn(maxchild-minchild) + minchild
 		randomName := make([]byte, rand.Intn(max-min)+min)
 		for li := range randomName {
@@ -190,8 +202,7 @@ func PopulateDB(count int, minchild int, maxchild int) (string, error) {
 				tx.Rollback()
 				return "", err
 			}
-			log.Println("| ")
-			log.Println(" -----: ", variation.IngridientId, variation.Name)
+
 		}
 
 	}
