@@ -40,6 +40,7 @@ var schema = `
 	);
 	`
 
+// TODO remove temp struct
 // Temporary struct for getting Variations as string
 type IngridientWithVariations struct {
 	Id         int    `db:"id" json:"id"`
@@ -127,59 +128,56 @@ func AllIngridients() ([]Ingridient, error) {
 	return GetIngridients(request)
 }
 
-// Drop tables #db
-func DropDB() (string, error) {
-	answer, err := DBpr.Queryx(`
-		DROP TABLE IF EXISTS IngridientsVariations;
-		DROP TABLE IF EXISTS Ingridients;
-	`)
-	if err != nil {
-		return "", err
+// Init/Drop tables #db
+func ExecDB(action string) (string, error) {
+	if action == "init" {
+		// Create tables
+		DBpr.MustExec(schema)
+
+		// Populate DB
+		tx := DBpr.MustBegin()
+		tx.MustExec(`
+			INSERT INTO Ingridients
+				(name)
+			VALUES
+				('Ganash'),
+				('Salt'),
+				('Pepper'),
+				('Onion'),
+				('Sugar'),
+				('Milk');
+
+			INSERT INTO IngridientsVariations
+				(name, ingridient_id)
+			VALUES 
+				('Ganash of the north', 1),
+				('Ganash of the south', 1),
+				('Salt of the sea', 2),
+				('Ganash of the west', 1),
+				('Pepper of the Iron Man', 3),
+				('Ganash of the east', 1),
+				('Chilli pepper', 3),
+				('Pepper', 3),
+				('Red hot', 3),
+				('Spicy pepper', 3),
+				('Dr.Pepper', 3);
+		`)
+		tx.Commit()
+		return "Create tables", err
+
+	} else if action == "drop" {
+		answer, err := DBpr.Queryx(`
+			DROP TABLE IF EXISTS IngridientsVariations;
+			DROP TABLE IF EXISTS Ingridients;
+		`)
+		if err != nil {
+			return "", err
+		}
+		defer answer.Close()
+		return "Drop tables", err
 	}
 
-	defer answer.Close()
-
-	return "Drop table -done", err
-}
-
-// Create tables without anything #db
-func InitDB() (string, error) {
-
-	// Create tables
-	DBpr.MustExec(schema)
-
-	// Populate DB
-	tx := DBpr.MustBegin()
-	tx.MustExec(`
-		INSERT INTO Ingridients
-			(name)
-		VALUES
-			('Ganash'),
-			('Salt'),
-			('Pepper'),
-			('Onion'),
-			('Sugar'),
-			('Milk');
-
-		INSERT INTO IngridientsVariations
-			(name, ingridient_id)
-		VALUES 
-			('Ganash of the north', 1),
-			('Ganash of the south', 1),
-			('Salt of the sea', 2),
-			('Ganash of the west', 1),
-			('Pepper of the Iron Man', 3),
-			('Ganash of the east', 1),
-			('Chilli pepper', 3),
-			('Pepper', 3),
-			('Red hot', 3),
-			('Spicy pepper', 3),
-			('Dr.Pepper', 3);
-	`)
-
-	tx.Commit()
-
-	return "Create tables -done", nil
+	return "Executed", err
 }
 
 // Populate tables with some data #db

@@ -23,8 +23,7 @@ func main() {
 	}
 
 	r := mux.NewRouter()
-	r.HandleFunc("/initdb", initDB)
-	r.HandleFunc("/dropdb", dropDB)
+	r.HandleFunc("/db/{action}", execDB)
 	r.HandleFunc("/popdb/{count}/{minchild}/{maxchild}", populateDB)
 	r.HandleFunc("/ingridients", showIngridients)
 	r.HandleFunc("/ingridients/{id}", showIngridients)
@@ -40,8 +39,10 @@ func showIngridients(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(vars)
 
 	id, err := strconv.Atoi(vars["id"])
-
-	if len(vars) == 0 || id <= 0 {
+	if err != nil {
+		//TODO add paranoid error. Prevent DB request
+	}
+	if len(vars) == 0 {
 		answer, err = models.AllIngridients()
 	} else if len(vars) > 0 || id >= 0 {
 		answer, err = models.IngridientShow(id)
@@ -64,23 +65,14 @@ func showIngridients(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// Drop DB
-func dropDB(w http.ResponseWriter, r *http.Request) {
+// Init/Drop DB
+func execDB(w http.ResponseWriter, r *http.Request) {
 
-	answer, err := models.DropDB()
-	if err != nil {
-		log.Print(err)
-		http.Error(w, http.StatusText(500), 500)
-		return
-	}
+	vars := mux.Vars(r)
+	fmt.Println(vars)
 
-	fmt.Fprintf(w, "%s\n", answer)
-}
-
-// Init DB
-func initDB(w http.ResponseWriter, r *http.Request) {
-
-	answer, err := models.InitDB()
+	action := vars["action"]
+	answer, err := models.ExecDB(action)
 	if err != nil {
 		log.Print(err)
 		http.Error(w, http.StatusText(500), 500)
@@ -101,9 +93,6 @@ func populateDB(w http.ResponseWriter, r *http.Request) {
 		minchild = 1
 	}
 	maxchild, err := strconv.Atoi(vars["maxchild"])
-
-	fmt.Fprintf(w, "Count: %v\n", count)
-	fmt.Println("count =>", vars["count"])
 
 	answer, err := models.PopulateDB(count, minchild, maxchild)
 	if err != nil {
