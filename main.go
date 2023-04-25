@@ -34,6 +34,7 @@ func main() {
 
 }
 
+// Single Ingridient
 func ingridientShow(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
@@ -54,12 +55,13 @@ func ingridientShow(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Add("Content-Type", "application/json")
 	w.Write(jsonResp)
 
 }
 
+// All Ingridients
 func ingridientsIndex(w http.ResponseWriter, r *http.Request) {
+
 	answer, err := models.AllIngridients()
 	if err != nil {
 		log.Print(err)
@@ -74,36 +76,39 @@ func ingridientsIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Add("Content-Type", "application/json")
-
 	w.Write(jsonResp)
 
 }
 
-// ingridientsIndex sends a HTTP response listing all ingridients.
+// Drop DB
 func dropDB(w http.ResponseWriter, r *http.Request) {
+
 	answer, err := models.DropDB()
 	if err != nil {
 		log.Print(err)
 		http.Error(w, http.StatusText(500), 500)
 		return
 	}
+
 	fmt.Fprintf(w, "%s\n", answer)
 }
 
-// ingridientsIndex sends a HTTP response listing all ingridients.
+// Init DB
 func initDB(w http.ResponseWriter, r *http.Request) {
+
 	answer, err := models.InitDB()
 	if err != nil {
 		log.Print(err)
 		http.Error(w, http.StatusText(500), 500)
 		return
 	}
+
 	fmt.Fprintf(w, "%s\n", answer)
 }
 
-// ingridientsIndex sends a HTTP response listing all ingridients.
+// Populate DB
 func populateDB(w http.ResponseWriter, r *http.Request) {
+
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
 	count, err := strconv.Atoi(vars["count"])
@@ -115,6 +120,7 @@ func populateDB(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprintf(w, "Count: %v\n", count)
 	fmt.Println("count =>", vars["count"])
+
 	answer, err := models.PopulateDB(count, minchild, maxchild)
 	if err != nil {
 		log.Print(err)

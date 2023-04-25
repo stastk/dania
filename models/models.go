@@ -61,7 +61,7 @@ type Variation struct {
 	IngridientId int    `db:"ingridient_id" json:"ingridient_id"`
 }
 
-// All Ingridients with their Variations
+// Single Ingridient with Variations
 func IngridientShow(id int) ([]Ingridient, error) {
 
 	ingridients := []Ingridient{}
@@ -99,7 +99,6 @@ func IngridientShow(id int) ([]Ingridient, error) {
 		}
 
 		toappend = Ingridient{record.Id, record.Name, variations}
-
 		ingridients = append(ingridients, toappend)
 
 	}
@@ -149,7 +148,6 @@ func AllIngridients() ([]Ingridient, error) {
 		}
 
 		toappend = Ingridient{record.Id, record.Name, variations}
-
 		ingridients = append(ingridients, toappend)
 
 	}
