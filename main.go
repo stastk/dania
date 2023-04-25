@@ -23,46 +23,30 @@ func main() {
 	}
 
 	r := mux.NewRouter()
-
 	r.HandleFunc("/initdb", initDB)
 	r.HandleFunc("/dropdb", dropDB)
 	r.HandleFunc("/popdb/{count}/{minchild}/{maxchild}", populateDB)
-	r.HandleFunc("/ingridients", ingridientsIndex)
-	r.HandleFunc("/ingridient/{id}", ingridientShow)
+	r.HandleFunc("/ingridients", showIngridients)
+	r.HandleFunc("/ingridients/{id}", showIngridients)
 	http.Handle("/", r)
 	http.ListenAndServe(":3000", nil)
 
 }
 
-// Single Ingridient
-func ingridientShow(w http.ResponseWriter, r *http.Request) {
-
+// Show Ingridient[s]
+func showIngridients(w http.ResponseWriter, r *http.Request) {
+	var answer []models.Ingridient
 	vars := mux.Vars(r)
-	w.WriteHeader(http.StatusOK)
+	fmt.Println(vars)
+
 	id, err := strconv.Atoi(vars["id"])
 
-	answer, err := models.IngridientShow(id)
-	if err != nil {
-		log.Print(err)
-		http.Error(w, http.StatusText(500), 500)
-		return
+	if len(vars) == 0 || id <= 0 {
+		answer, err = models.AllIngridients()
+	} else if len(vars) > 0 || id >= 0 {
+		answer, err = models.IngridientShow(id)
 	}
 
-	jsonResp, err := json.Marshal(answer)
-	if err != nil {
-		log.Fatalf("Error happened in JSON marshal. Err: %s", err)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsonResp)
-
-}
-
-// All Ingridients
-func ingridientsIndex(w http.ResponseWriter, r *http.Request) {
-
-	answer, err := models.AllIngridients()
 	if err != nil {
 		log.Print(err)
 		http.Error(w, http.StatusText(500), 500)

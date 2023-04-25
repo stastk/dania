@@ -61,21 +61,9 @@ type Variation struct {
 	IngridientId int    `db:"ingridient_id" json:"ingridient_id"`
 }
 
-// Single Ingridient with Variations
-func IngridientShow(id int) ([]Ingridient, error) {
-
+func GetIngridients(request string) ([]Ingridient, error) {
 	ingridients := []Ingridient{}
-
-	rows, err := DBpr.Queryx(`
-		SELECT
-			i.id,
-			i.name,
-			COALESCE(json_agg(v) FILTER (WHERE v.id IS NOT NULL), '[]') AS variations
-			FROM Ingridients i
-			LEFT JOIN IngridientsVariations v ON v.ingridient_id = i.id
-			WHERE i.id = ` + strconv.Itoa(id) + `
-			GROUP BY i.id;
-	`)
+	rows, err := DBpr.Queryx(request)
 
 	if err != nil {
 		log.Fatal(err)
@@ -85,7 +73,6 @@ func IngridientShow(id int) ([]Ingridient, error) {
 	for rows.Next() {
 		var record IngridientWithVariations
 		var toappend Ingridient
-
 		if err := rows.StructScan(&record); err != nil {
 			panic(err)
 		}
@@ -108,15 +95,27 @@ func IngridientShow(id int) ([]Ingridient, error) {
 	}
 
 	return ingridients, nil
+}
+
+// Single Ingridient with Variations
+func IngridientShow(id int) ([]Ingridient, error) {
+	request := `
+	SELECT
+		i.id,
+		i.name,
+		COALESCE(json_agg(v) FILTER (WHERE v.id IS NOT NULL), '[]') AS variations
+		FROM Ingridients i
+		LEFT JOIN IngridientsVariations v ON v.ingridient_id = i.id
+		WHERE i.id = ` + strconv.Itoa(id) + `
+		GROUP BY i.id;
+	`
+	return GetIngridients(request)
 
 }
 
-// All Ingridients with their Variations
+// All Ingridients with Variations
 func AllIngridients() ([]Ingridient, error) {
-
-	ingridients := []Ingridient{}
-
-	rows, err := DBpr.Queryx(`
+	request := `
 		SELECT
 			i.id,
 			i.name,
@@ -124,40 +123,8 @@ func AllIngridients() ([]Ingridient, error) {
 			FROM Ingridients i
 			LEFT JOIN IngridientsVariations v ON v.ingridient_id = i.id
 			GROUP BY i.id;
-	`)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var record IngridientWithVariations
-		var toappend Ingridient
-
-		if err := rows.StructScan(&record); err != nil {
-			panic(err)
-		}
-
-		in := []byte(record.Variations)
-		variations := []Variation{}
-		err := json.Unmarshal(in, &variations)
-
-		if err != nil {
-			log.Print(err)
-		}
-
-		toappend = Ingridient{record.Id, record.Name, variations}
-		ingridients = append(ingridients, toappend)
-
-	}
-
-	if err := rows.Err(); err != nil {
-		panic(err)
-	}
-
-	return ingridients, nil
-
+	`
+	return GetIngridients(request)
 }
 
 // Drop tables #db
