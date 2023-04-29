@@ -62,9 +62,17 @@ type Variation struct {
 	IngridientId int    `db:"ingridient_id" json:"ingridient_id"`
 }
 
-func NewIngridient(request string) ([]Ingridient, error) {
-	name := r.FormValue("name")
+func NewIngridient(name string) ([]Ingridient, error) {
+
+	request := `
+	INSERT INTO Ingridients(name)
+	VALUES ('` + name + `')
+	RETURNING *;
+	`
+
+	return GetIngridients(request)
 }
+
 func GetIngridients(request string) ([]Ingridient, error) {
 	ingridients := []Ingridient{}
 	rows, err := DBpr.Queryx(request)

@@ -27,7 +27,7 @@ func main() {
 	r.HandleFunc("/popdb/{count}/{minchild}/{maxchild}", populateDB)
 	r.HandleFunc("/ingridients", showIngridients)
 	r.HandleFunc("/ingridients/{id}", showIngridients)
-	r.HandleFunc("/ingridients/new/{name}", newIngridient).Methods("POST")
+	r.HandleFunc("/ingridient/new", newIngridient).Methods("POST")
 
 	http.Handle("/", r)
 	http.ListenAndServe(":3000", nil)
@@ -36,20 +36,17 @@ func main() {
 
 // New Ingridient
 func newIngridient(w http.ResponseWriter, r *http.Request) {
+
 	var answer []models.Ingridient
-	vars := mux.Vars(r)
-	fmt.Println(vars)
-
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		//TODO add paranoid error. Prevent DB request
-	}
-	if len(vars) == 0 {
-		answer, err = models.AllIngridients()
-	} else if len(vars) > 0 || id >= 0 {
-		answer, err = models.IngridientShow(id)
-	}
-
+	r.ParseForm()
+	err := r.ParseForm()
+	f := r.Form
+	name := f.Get("name")
+	fmt.Println("name:")
+	fmt.Println(name)
+	answer, err = models.NewIngridient(name)
+	log.Print(name)
+	log.Print(answer)
 	if err != nil {
 		log.Print(err)
 		http.Error(w, http.StatusText(500), 500)
@@ -64,7 +61,7 @@ func newIngridient(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonResp)
-
+	//log.Print(jsonResp)
 }
 
 // Show Ingridient[s]
