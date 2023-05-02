@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"math/rand"
 	"strconv"
@@ -38,21 +39,13 @@ var schema = `
 		ingridient_id int NOT NULL,
 		FOREIGN KEY (ingridient_id) REFERENCES Ingridients(id) ON UPDATE CASCADE
 	);
-	`
-
-// TODO remove temp struct
-// Temporary struct for getting Variations as string
-type IngridientWithVariations struct {
-	Id         int    `db:"id" json:"id"`
-	Name       string `db:"name" json:"name"`
-	Variations string `db:"variations" json:"variations"`
-}
+`
 
 // Ingridient and all Variations attached to it
 type Ingridient struct {
-	Id         int         `db:"id" json:"id"`
-	Name       string      `db:"name" json:"name"`
-	Variations []Variation `db:"variations" json:"variations"`
+	Id         int        `db:"id" json:"id"`
+	Name       string     `db:"name" json:"name"`
+	Variations Variations `db:"variations" json:"variations"`
 }
 
 // Variation of specific Ingridient
@@ -60,6 +53,22 @@ type Variation struct {
 	Id           int    `db:"id" json:"id"`
 	Name         string `db:"name" json:"name"`
 	IngridientId int    `db:"ingridient_id" json:"ingridient_id"`
+}
+
+type Variations []Variation
+
+// Make the Variations type implement the sql.Scanner interface. This method
+// simply decodes a JSON-encoded value into the struct fields.
+func (v *Variations) Scan(value interface{}) error {
+	var b []byte
+	switch t := value.(type) {
+	case []byte:
+		b = t
+	default:
+		return errors.New("unknown type")
+	}
+
+	return json.Unmarshal(b, &v)
 }
 
 func NewIngridient(name string) ([]Ingridient, error) {
@@ -83,22 +92,16 @@ func GetIngridients(request string) ([]Ingridient, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var record IngridientWithVariations
-		var toappend Ingridient
+		var record Ingridient
 		if err := rows.StructScan(&record); err != nil {
 			panic(err)
 		}
-
-		in := []byte(record.Variations)
-		variations := []Variation{}
-		err := json.Unmarshal(in, &variations)
 
 		if err != nil {
 			log.Print(err)
 		}
 
-		toappend = Ingridient{record.Id, record.Name, variations}
-		ingridients = append(ingridients, toappend)
+		ingridients = append(ingridients, record)
 
 	}
 

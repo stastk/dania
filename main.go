@@ -42,11 +42,9 @@ func newIngridient(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	f := r.Form
 	name := f.Get("name")
-	fmt.Println("name:")
-	fmt.Println(name)
+	//variations := f.Get("variations")
 	answer, err = models.NewIngridient(name)
-	log.Print(name)
-	log.Print(answer)
+	//answer, err = models.NewIngridient(name, variations)
 	if err != nil {
 		log.Print(err)
 		http.Error(w, http.StatusText(500), 500)
@@ -61,7 +59,6 @@ func newIngridient(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonResp)
-	//log.Print(jsonResp)
 }
 
 // Show Ingridient[s]
