@@ -74,11 +74,22 @@ func (v *Variations) Scan(value interface{}) error {
 func NewIngridient(name string) ([]Ingridient, error) {
 
 	request := `
-	INSERT INTO Ingridients(name)
-	VALUES ('` + name + `')
-	RETURNING *;
+		INSERT INTO Ingridients(name)
+		VALUES ('` + name + `')
+		RETURNING *;
 	`
 
+	return GetIngridients(request)
+}
+
+func NewVarition(name string, parentId int) ([]Ingridient, error) {
+
+	request := `
+		INSERT INTO IngridientsVariations(name, ingridient_id)
+		VALUES ('` + name + `', ` + strconv.Itoa(parentId) + `)
+		RETURNING *;
+	`
+	// TODO return single Ingridient
 	return GetIngridients(request)
 }
 

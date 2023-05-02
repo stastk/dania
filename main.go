@@ -28,6 +28,7 @@ func main() {
 	r.HandleFunc("/ingridients", showIngridients)
 	r.HandleFunc("/ingridients/{id}", showIngridients)
 	r.HandleFunc("/ingridient/new", newIngridient).Methods("POST")
+	r.HandleFunc("/ingridient/new/variation", newVariation).Methods("POST")
 
 	http.Handle("/", r)
 	http.ListenAndServe(":3000", nil)
@@ -42,9 +43,38 @@ func newIngridient(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	f := r.Form
 	name := f.Get("name")
-	//variations := f.Get("variations")
+	json.Marshal(answer)
+	//answer, err = models.NewIngridient(name)
 	answer, err = models.NewIngridient(name)
-	//answer, err = models.NewIngridient(name, variations)
+	if err != nil {
+		log.Print(err)
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	jsonResp, err := json.Marshal(answer)
+	if err != nil {
+		log.Fatalf("Error happened in JSON marshal. Err: %s", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonResp)
+}
+
+// New Ingridient
+func newVariation(w http.ResponseWriter, r *http.Request) {
+
+	var answer []models.Ingridient
+	r.ParseForm()
+	err := r.ParseForm()
+	f := r.Form
+	name := f.Get("name")
+	// TODO handle error
+	parentId, err := strconv.Atoi(f.Get("parent_id"))
+	json.Marshal(answer)
+	//answer, err = models.NewIngridient(name)
+	answer, err = models.NewVarition(name, parentId)
 	if err != nil {
 		log.Print(err)
 		http.Error(w, http.StatusText(500), 500)
