@@ -71,28 +71,6 @@ func (v *Variations) Scan(value interface{}) error {
 	return json.Unmarshal(b, &v)
 }
 
-func NewIngridient(name string) ([]Ingridient, error) {
-
-	request := `
-		INSERT INTO Ingridients(name)
-		VALUES ('` + name + `')
-		RETURNING *;
-	`
-
-	return GetIngridients(request)
-}
-
-func NewVarition(name string, parentId int) ([]Ingridient, error) {
-
-	request := `
-		INSERT INTO IngridientsVariations(name, ingridient_id)
-		VALUES ('` + name + `', ` + strconv.Itoa(parentId) + `)
-		RETURNING *;
-	`
-	// TODO return single Ingridient
-	return GetIngridients(request)
-}
-
 func GetIngridients(request string) ([]Ingridient, error) {
 	ingridients := []Ingridient{}
 	rows, err := DBpr.Queryx(request)
@@ -123,17 +101,57 @@ func GetIngridients(request string) ([]Ingridient, error) {
 	return ingridients, nil
 }
 
-// Single Ingridient with Variations
-func IngridientShow(id int) ([]Ingridient, error) {
+func NewIngridient(name string) ([]Ingridient, error) {
+
 	request := `
-	SELECT
-		i.id,
-		i.name,
+		INSERT INTO Ingridients(name)
+		VALUES ('` + name + `')
+		RETURNING *;
+	`
+	return GetIngridients(request)
+}
+
+func NewVarition(name string, parentId int) ([]Ingridient, error) {
+
+	// request := `
+	// 	INSERT INTO IngridientsVariations(name, ingridient_id)
+	// 	VALUES ('` + name + `', ` + strconv.Itoa(parentId) + `)
+	// 	RETURNING ingridient_id;
+	// `
+
+	// TODO this query return Ingridient before Variation are added, fix that
+	request := `
+
+		WITH parent_ingridient AS (
+			INSERT INTO IngridientsVariations(name, ingridient_id)
+			VALUES ('` + name + `', ` + strconv.Itoa(parentId) + `)
+			RETURNING ingridient_id
+		)
+
+		SELECT i.id, i.name,
 		COALESCE(json_agg(v) FILTER (WHERE v.id IS NOT NULL), '[]') AS variations
 		FROM Ingridients i
 		LEFT JOIN IngridientsVariations v ON v.ingridient_id = i.id
-		WHERE i.id = ` + strconv.Itoa(id) + `
+		WHERE i.id = (SELECT ingridient_id FROM parent_ingridient)
 		GROUP BY i.id;
+
+	`
+
+	// TODO return single Ingridient
+	return GetIngridients(request)
+}
+
+// Single Ingridient with Variations
+func IngridientShow(id int) ([]Ingridient, error) {
+	request := `
+		SELECT
+			i.id,
+			i.name,
+			COALESCE(json_agg(v) FILTER (WHERE v.id IS NOT NULL), '[]') AS variations
+			FROM Ingridients i
+			LEFT JOIN IngridientsVariations v ON v.ingridient_id = i.id
+			WHERE i.id = ` + strconv.Itoa(id) + `
+			GROUP BY i.id;
 	`
 	return GetIngridients(request)
 
