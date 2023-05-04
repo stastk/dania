@@ -113,31 +113,19 @@ func NewIngridient(name string) ([]Ingridient, error) {
 
 func NewVarition(name string, parentId int) ([]Ingridient, error) {
 
-	// request := `
-	// 	INSERT INTO IngridientsVariations(name, ingridient_id)
-	// 	VALUES ('` + name + `', ` + strconv.Itoa(parentId) + `)
-	// 	RETURNING ingridient_id;
-	// `
-
-	// TODO this query return Ingridient before Variation are added, fix that
 	request := `
 
-		WITH parent_ingridient AS (
-			INSERT INTO IngridientsVariations(name, ingridient_id)
-			VALUES ('` + name + `', ` + strconv.Itoa(parentId) + `)
-			RETURNING ingridient_id
-		)
-
+		INSERT INTO IngridientsVariations(name, ingridient_id)
+		VALUES ('` + name + `', ` + strconv.Itoa(parentId) + `);
+	
 		SELECT i.id, i.name,
 		COALESCE(json_agg(v) FILTER (WHERE v.id IS NOT NULL), '[]') AS variations
 		FROM Ingridients i
 		LEFT JOIN IngridientsVariations v ON v.ingridient_id = i.id
-		WHERE i.id = (SELECT ingridient_id FROM parent_ingridient)
+		WHERE i.id = ` + strconv.Itoa(parentId) + `
 		GROUP BY i.id;
 
 	`
-
-	// TODO return single Ingridient
 	return GetIngridients(request)
 }
 
