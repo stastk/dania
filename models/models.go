@@ -57,9 +57,10 @@ var schema = `
 
 // Ingridient and all Variations attached to it
 type Ingridient struct {
-	Id         int        `db:"id" json:"id"`
-	Name       string     `db:"name" json:"name"`
-	Variations Variations `db:"variations" json:"variations"`
+	Id                    int                   `db:"id" json:"id"`
+	Name                  string                `db:"name" json:"name"`
+	Variations            Variations            `db:"variations" json:"variations"`
+	IngridientsCategories IngridientsCategories `db:"categories" json:"categories"`
 }
 
 // Variation of specific Ingridient
@@ -76,10 +77,23 @@ type IngridientsCategory struct {
 }
 
 type Variations []Variation
+type IngridientsCategories []IngridientsCategory
 
 // Make the Variations type implement the sql.Scanner interface. This method
 // simply decodes a JSON-encoded value into the struct fields.
 func (v *Variations) Scan(value interface{}) error {
+	var b []byte
+	switch t := value.(type) {
+	case []byte:
+		b = t
+	default:
+		return errors.New("unknown type")
+	}
+
+	return json.Unmarshal(b, &v)
+}
+
+func (v *IngridientsCategories) Scan(value interface{}) error {
 	var b []byte
 	switch t := value.(type) {
 	case []byte:
@@ -147,16 +161,37 @@ func NewVarition(name string, parentId int) ([]Ingridient, error) {
 
 // Single Ingridient with Variations
 func IngridientShow(id int) ([]Ingridient, error) {
+
 	request := `
 		SELECT
 			i.id,
 			i.name,
-			COALESCE(json_agg(v) FILTER (WHERE v.id IS NOT NULL), '[]') AS variations
-			FROM Ingridients i
-			LEFT JOIN IngridientsVariations v ON v.ingridient_id = i.id
-			WHERE i.id = ` + strconv.Itoa(id) + `
-			GROUP BY i.id;
+			COALESCE(json_agg(DISTINCT v) FILTER (WHERE v.id IS NOT NULL), '[]') AS variations,
+			COALESCE(json_agg(DISTINCT ic) FILTER (WHERE ic.id IS NOT NULL), '[]') AS categories
+
+		FROM Ingridients i
+
+		LEFT JOIN (
+			SELECT DISTINCT id, ingridient_id, name
+			FROM IngridientsVariations
+			GROUP BY name, id
+		) AS v
+		ON v.ingridient_id = i.id
+
+		LEFT JOIN (
+			SELECT DISTINCT id, name
+			FROM IngridientsCategories
+			GROUP BY name, id
+		) AS ic
+		ON ic.id IN (
+			SELECT ingridient_category_id 
+			FROM IngridientsToCategories 
+			WHERE ingridient_id = i.id
+		)
+		WHERE i.id = ` + strconv.Itoa(id) + `
+		GROUP BY i.id;
 	`
+
 	return GetIngridients(request)
 }
 
@@ -166,10 +201,29 @@ func AllIngridients() ([]Ingridient, error) {
 		SELECT
 			i.id,
 			i.name,
-			COALESCE(json_agg(v) FILTER (WHERE v.id IS NOT NULL), '[]') AS variations
-			FROM Ingridients i
-			LEFT JOIN IngridientsVariations v ON v.ingridient_id = i.id
-			GROUP BY i.id;
+			COALESCE(json_agg(DISTINCT v) FILTER (WHERE v.id IS NOT NULL), '[]') AS variations,
+			COALESCE(json_agg(DISTINCT ic) FILTER (WHERE ic.id IS NOT NULL), '[]') AS categories
+
+		FROM Ingridients i
+
+		LEFT JOIN (
+			SELECT DISTINCT id, ingridient_id, name
+			FROM IngridientsVariations
+			GROUP BY name, id
+		) AS v
+		ON v.ingridient_id = i.id
+
+		LEFT JOIN (
+			SELECT DISTINCT id, name
+			FROM IngridientsCategories
+			GROUP BY name, id
+		) AS ic
+		ON ic.id IN (
+			SELECT ingridient_category_id 
+			FROM IngridientsToCategories 
+			WHERE ingridient_id = i.id
+		)
+		GROUP BY i.id;
 	`
 	return GetIngridients(request)
 }
@@ -222,16 +276,12 @@ func ExecDB(action string) (string, error) {
 				(ingridient_id, ingridient_category_id)
 			VALUES 
 				(1, 1),
+				(1, 2),
+				(1, 3),
 				(2, 1),
 				(3, 2),
-				(4, 1),
-				(1, 3),
-				(3, 1),
-				(2, 3),
-				(5, 3),
-				(1, 3),
-				(6, 3),
-				(2, 3);
+				(4, 5),
+				(4, 6);
 		`)
 		tx.Commit()
 		return "Create tables", err
