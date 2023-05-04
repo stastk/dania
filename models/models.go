@@ -39,6 +39,20 @@ var schema = `
 		ingridient_id int NOT NULL,
 		FOREIGN KEY (ingridient_id) REFERENCES Ingridients(id) ON UPDATE CASCADE
 	);
+
+	CREATE TABLE IF NOT EXISTS IngridientsCategories (
+		id serial PRIMARY KEY,
+		name VARCHAR(50) UNIQUE NOT NULL
+	);
+
+	CREATE TABLE IF NOT EXISTS IngridientsToCategories (
+		id serial PRIMARY KEY,
+		ingridient_id int NOT NULL,
+		FOREIGN KEY (ingridient_id) REFERENCES Ingridients(id) ON UPDATE CASCADE,
+		ingridient_category_id int NOT NULL,
+		FOREIGN KEY (ingridient_category_id) REFERENCES IngridientsCategories(id) ON UPDATE CASCADE
+	);
+
 `
 
 // Ingridient and all Variations attached to it
@@ -53,6 +67,12 @@ type Variation struct {
 	Id           int    `db:"id" json:"id"`
 	Name         string `db:"name" json:"name"`
 	IngridientId int    `db:"ingridient_id" json:"ingridient_id"`
+}
+
+// Category of Ingridient
+type IngridientsCategory struct {
+	Id   int    `db:"id" json:"id"`
+	Name string `db:"name" json:"name"`
 }
 
 type Variations []Variation
@@ -102,7 +122,6 @@ func GetIngridients(request string) ([]Ingridient, error) {
 }
 
 func NewIngridient(name string) ([]Ingridient, error) {
-
 	request := `
 		INSERT INTO Ingridients(name)
 		VALUES ('` + name + `')
@@ -112,19 +131,16 @@ func NewIngridient(name string) ([]Ingridient, error) {
 }
 
 func NewVarition(name string, parentId int) ([]Ingridient, error) {
-
 	request := `
-
 		INSERT INTO IngridientsVariations(name, ingridient_id)
 		VALUES ('` + name + `', ` + strconv.Itoa(parentId) + `);
 	
 		SELECT i.id, i.name,
-		COALESCE(json_agg(v) FILTER (WHERE v.id IS NOT NULL), '[]') AS variations
-		FROM Ingridients i
-		LEFT JOIN IngridientsVariations v ON v.ingridient_id = i.id
-		WHERE i.id = ` + strconv.Itoa(parentId) + `
-		GROUP BY i.id;
-
+			COALESCE(json_agg(v) FILTER (WHERE v.id IS NOT NULL), '[]') AS variations
+			FROM Ingridients i
+			LEFT JOIN IngridientsVariations v ON v.ingridient_id = i.id
+			WHERE i.id = ` + strconv.Itoa(parentId) + `
+			GROUP BY i.id;
 	`
 	return GetIngridients(request)
 }
@@ -142,7 +158,6 @@ func IngridientShow(id int) ([]Ingridient, error) {
 			GROUP BY i.id;
 	`
 	return GetIngridients(request)
-
 }
 
 // All Ingridients with Variations
@@ -192,6 +207,31 @@ func ExecDB(action string) (string, error) {
 				('Red hot', 3),
 				('Spicy pepper', 3),
 				('Dr.Pepper', 3);
+
+			INSERT INTO IngridientsCategories
+				(name)
+			VALUES
+				('Bakery'),
+				('Spice'),
+				('Meat'),
+				('Fish'),
+				('Vegan'),
+				('Contain sugar');
+
+			INSERT INTO IngridientsToCategories
+				(ingridient_id, ingridient_category_id)
+			VALUES 
+				(1, 1),
+				(2, 1),
+				(3, 2),
+				(4, 1),
+				(1, 3),
+				(3, 1),
+				(2, 3),
+				(5, 3),
+				(1, 3),
+				(6, 3),
+				(2, 3);
 		`)
 		tx.Commit()
 		return "Create tables", err
@@ -199,6 +239,8 @@ func ExecDB(action string) (string, error) {
 	} else if action == "drop" {
 		answer, err := DBpr.Queryx(`
 			DROP TABLE IF EXISTS IngridientsVariations;
+			DROP TABLE IF EXISTS IngridientsToCategories;
+			DROP TABLE IF EXISTS IngridientsCategories;
 			DROP TABLE IF EXISTS Ingridients;
 		`)
 		if err != nil {
