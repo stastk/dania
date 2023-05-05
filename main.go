@@ -29,6 +29,7 @@ func main() {
 	r.HandleFunc("/ingridients/{id}", showIngridients)
 	r.HandleFunc("/ingridient/new", newIngridient).Methods("POST")
 	r.HandleFunc("/ingridient/new/variation", newVariation).Methods("POST")
+	r.HandleFunc("/ingridients/categories", showIngridientsCategories)
 
 	http.Handle("/", r)
 	http.ListenAndServe(":3000", nil)
@@ -105,6 +106,41 @@ func showIngridients(w http.ResponseWriter, r *http.Request) {
 		answer, err = models.AllIngridients()
 	} else if len(vars) > 0 || id >= 0 {
 		answer, err = models.IngridientShow(id)
+	}
+
+	if err != nil {
+		log.Print(err)
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	jsonResp, err := json.Marshal(answer)
+	if err != nil {
+		log.Fatalf("Error happened in JSON marshal. Err: %s", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonResp)
+
+}
+
+// Show Ingridient[s] Categories
+func showIngridientsCategories(w http.ResponseWriter, r *http.Request) {
+	var answer []models.IngridientsCategory
+	vars := mux.Vars(r)
+	fmt.Println(vars)
+
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		//TODO add paranoid error. Prevent DB request
+	}
+	if len(vars) == 0 {
+		// TODO Create new func:
+		answer, err = models.AllIngridientsCategories()
+	} else if len(vars) > 0 || id >= 0 {
+		// TODO Create new func:
+		answer, err = models.IngridientsCategoryShow(id)
 	}
 
 	if err != nil {

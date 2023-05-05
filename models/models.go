@@ -135,6 +135,36 @@ func GetIngridients(request string) ([]Ingridient, error) {
 	return ingridients, nil
 }
 
+func GetIngridientsCategories(request string) ([]IngridientsCategory, error) {
+	categories := []IngridientsCategory{}
+	rows, err := DBpr.Queryx(request)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var record IngridientsCategory
+		if err := rows.StructScan(&record); err != nil {
+			panic(err)
+		}
+
+		if err != nil {
+			log.Print(err)
+		}
+
+		categories = append(categories, record)
+
+	}
+
+	if err := rows.Err(); err != nil {
+		panic(err)
+	}
+
+	return categories, nil
+}
+
 func NewIngridient(name string) ([]Ingridient, error) {
 	request := `
 		INSERT INTO Ingridients(name)
@@ -157,6 +187,14 @@ func NewVarition(name string, parentId int) ([]Ingridient, error) {
 			GROUP BY i.id;
 	`
 	return GetIngridients(request)
+}
+
+func NewIngridientsCategory(name string) ([]IngridientsCategory, error) {
+	request := `
+		INSERT INTO IngridientsCategories(name)
+		VALUES ('` + name + `');
+	`
+	return GetIngridientsCategories(request)
 }
 
 // Single Ingridient with Variations
@@ -333,7 +371,7 @@ func PopulateDB(count int, minchild int, maxchild int) (string, error) {
 		log.Println("Ingridient:: ", ingridient.Id, ingridient.Name)
 
 		for ich := 0; ich < randomChildCount; ich++ {
-			// Add to createt earlier Ingridients Variations
+			// Add to created earlier Ingridients Variations
 			err = tx.QueryRowx(`INSERT INTO IngridientsVariations (name, ingridient_id) VALUES ($1, $2) RETURNING *;`, string(randomName)+"_"+strconv.Itoa(ich), ingridient.Id).StructScan(&variation)
 			if err != nil {
 				tx.Rollback()
