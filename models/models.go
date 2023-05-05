@@ -192,7 +192,8 @@ func NewVarition(name string, parentId int) ([]Ingridient, error) {
 func NewIngridientsCategory(name string) ([]IngridientsCategory, error) {
 	request := `
 		INSERT INTO IngridientsCategories(name)
-		VALUES ('` + name + `');
+		VALUES ('` + name + `')
+		RETURNING *;;
 	`
 	return GetIngridientsCategories(request)
 }
@@ -264,6 +265,33 @@ func AllIngridients() ([]Ingridient, error) {
 		GROUP BY i.id;
 	`
 	return GetIngridients(request)
+}
+
+// All IngridientsCategories // TODO not working, fix that
+func AllIngridientsCategories() ([]IngridientsCategory, error) {
+	request := `
+		SELECT
+			ic.id,
+			ic.name
+
+		FROM IngridientsCategories ic
+		ORDER BY ic.id;
+	`
+	return GetIngridientsCategories(request)
+}
+
+// Single IngridientsCategory
+func IngridientsCategoryShow(id int) ([]IngridientsCategory, error) {
+	request := `
+		SELECT
+			ic.id,
+			ic.name
+
+		FROM IngridientsCategories ic
+		WHERE ic.id = ` + strconv.Itoa(id) + `
+		ORDER BY ic.id;
+	`
+	return GetIngridientsCategories(request)
 }
 
 // Init/Drop tables #db
