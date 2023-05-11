@@ -57,27 +57,27 @@ var schema = `
 
 // Ingridient and all Variations attached to it
 type Ingridient struct {
-	Id                    int                   `db:"id" json:"id"`
-	Name                  string                `db:"name" json:"name"`
-	Variations            Variations            `db:"variations" json:"variations"`
-	IngridientsCategories IngridientsCategories `db:"categories" json:"categories"`
+	Id         int        `db:"id" json:"id"`
+	Name       string     `db:"name" json:"name"`
+	Variations Variations `db:"variations" json:"variations"`
+	Categories Categories `db:"categories" json:"categories"`
 }
 
 // Variation of specific Ingridient
-type Variation struct {
+type VariationOfIngridient struct {
 	Id           int    `db:"id" json:"id"`
 	Name         string `db:"name" json:"name"`
 	IngridientId int    `db:"ingridient_id" json:"ingridient_id"`
 }
 
 // Category of Ingridient
-type IngridientsCategory struct {
+type CategoryOfIngridients struct {
 	Id   int    `db:"id" json:"id"`
 	Name string `db:"name" json:"name"`
 }
 
-type Variations []Variation
-type IngridientsCategories []IngridientsCategory
+type Variations []VariationOfIngridient
+type Categories []CategoryOfIngridients
 
 // Make the Variations type implement the sql.Scanner interface. This method
 // simply decodes a JSON-encoded value into the struct fields.
@@ -93,7 +93,7 @@ func (v *Variations) Scan(value interface{}) error {
 	return json.Unmarshal(b, &v)
 }
 
-func (v *IngridientsCategories) Scan(value interface{}) error {
+func (v *Categories) Scan(value interface{}) error {
 	var b []byte
 	switch t := value.(type) {
 	case []byte:
@@ -105,7 +105,7 @@ func (v *IngridientsCategories) Scan(value interface{}) error {
 	return json.Unmarshal(b, &v)
 }
 
-func GetIngridients(request string) ([]Ingridient, error) {
+func Get_Ingridients(request string) ([]Ingridient, error) {
 	ingridients := []Ingridient{}
 	rows, err := DBpr.Queryx(request)
 
@@ -135,8 +135,8 @@ func GetIngridients(request string) ([]Ingridient, error) {
 	return ingridients, nil
 }
 
-func GetIngridientsCategories(request string) ([]IngridientsCategory, error) {
-	categories := []IngridientsCategory{}
+func Get_CategoriesOfIngridients(request string) ([]CategoryOfIngridients, error) {
+	categories := []CategoryOfIngridients{}
 	rows, err := DBpr.Queryx(request)
 
 	if err != nil {
@@ -145,7 +145,7 @@ func GetIngridientsCategories(request string) ([]IngridientsCategory, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var record IngridientsCategory
+		var record CategoryOfIngridients
 		if err := rows.StructScan(&record); err != nil {
 			panic(err)
 		}
@@ -165,16 +165,16 @@ func GetIngridientsCategories(request string) ([]IngridientsCategory, error) {
 	return categories, nil
 }
 
-func NewIngridient(name string) ([]Ingridient, error) {
+func Ingridient_New(name string) ([]Ingridient, error) {
 	request := `
 		INSERT INTO Ingridients(name)
 		VALUES ('` + name + `')
 		RETURNING *;
 	`
-	return GetIngridients(request)
+	return Get_Ingridients(request)
 }
 
-func NewVarition(name string, parentId int) ([]Ingridient, error) {
+func Varition_New(name string, parentId int) ([]Ingridient, error) {
 	request := `
 		INSERT INTO IngridientsVariations(name, ingridient_id)
 		VALUES ('` + name + `', ` + strconv.Itoa(parentId) + `);
@@ -186,20 +186,20 @@ func NewVarition(name string, parentId int) ([]Ingridient, error) {
 			WHERE i.id = ` + strconv.Itoa(parentId) + `
 			GROUP BY i.id;
 	`
-	return GetIngridients(request)
+	return Get_Ingridients(request)
 }
 
-func NewIngridientsCategory(name string) ([]IngridientsCategory, error) {
+func CategoryOfIngridients_New(name string) ([]CategoryOfIngridients, error) {
 	request := `
 		INSERT INTO IngridientsCategories(name)
 		VALUES ('` + name + `')
 		RETURNING *;;
 	`
-	return GetIngridientsCategories(request)
+	return Get_CategoriesOfIngridients(request)
 }
 
 // Single Ingridient with Variations
-func IngridientShow(id int) ([]Ingridient, error) {
+func Ingridient_Show(id int) ([]Ingridient, error) {
 
 	request := `
 		SELECT
@@ -231,11 +231,11 @@ func IngridientShow(id int) ([]Ingridient, error) {
 		GROUP BY i.id;
 	`
 
-	return GetIngridients(request)
+	return Get_Ingridients(request)
 }
 
 // All Ingridients with Variations
-func AllIngridients() ([]Ingridient, error) {
+func Ingridient_All() ([]Ingridient, error) {
 	request := `
 		SELECT
 			i.id,
@@ -264,11 +264,11 @@ func AllIngridients() ([]Ingridient, error) {
 		)
 		GROUP BY i.id;
 	`
-	return GetIngridients(request)
+	return Get_Ingridients(request)
 }
 
 // All IngridientsCategories // TODO not working, fix that
-func AllIngridientsCategories() ([]IngridientsCategory, error) {
+func CategoryOfIngridients_All() ([]CategoryOfIngridients, error) {
 	request := `
 		SELECT
 			ic.id,
@@ -277,11 +277,11 @@ func AllIngridientsCategories() ([]IngridientsCategory, error) {
 		FROM IngridientsCategories ic
 		ORDER BY ic.id;
 	`
-	return GetIngridientsCategories(request)
+	return Get_CategoriesOfIngridients(request)
 }
 
-// Single IngridientsCategory
-func IngridientsCategoryShow(id int) ([]IngridientsCategory, error) {
+// Single CategoryOfIngridients
+func CategoryOfIngridients_Show(id int) ([]CategoryOfIngridients, error) {
 	request := `
 		SELECT
 			ic.id,
@@ -291,7 +291,7 @@ func IngridientsCategoryShow(id int) ([]IngridientsCategory, error) {
 		WHERE ic.id = ` + strconv.Itoa(id) + `
 		ORDER BY ic.id;
 	`
-	return GetIngridientsCategories(request)
+	return Get_CategoriesOfIngridients(request)
 }
 
 // Init/Drop tables #db
@@ -388,7 +388,7 @@ func PopulateDB(count int, minchild int, maxchild int) (string, error) {
 		}
 
 		var ingridient Ingridient
-		var variation Variation
+		var variation VariationOfIngridient
 
 		// Create some Ingridients
 		err = tx.QueryRowx(`INSERT INTO Ingridients (name) VALUES ($1) RETURNING *;`, randomName).StructScan(&ingridient)

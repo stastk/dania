@@ -25,13 +25,13 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/db/{action}", execDB)
 	r.HandleFunc("/popdb/{count}/{minchild}/{maxchild}", populateDB)
-	r.HandleFunc("/ingridients", showIngridients)
-	r.HandleFunc("/ingridients/{id}", showIngridients)
-	r.HandleFunc("/ingridient/new", newIngridient).Methods("POST")
-	r.HandleFunc("/ingridient/new/variation", newVariation).Methods("POST")
-	r.HandleFunc("/ingridients/categories/new", newIngridientsCategory).Methods("POST")
-	r.HandleFunc("/ingridients/categories", showIngridientsCategories)
-	r.HandleFunc("/ingridients/categories/{id}", showIngridientsCategories)
+	r.HandleFunc("/ingridients", ingridient_Show)                                        // All Ingridient
+	r.HandleFunc("/ingridients/{id}", ingridient_Show)                                   // Show Ingridient
+	r.HandleFunc("/ingridient/new", ingridient_New).Methods("POST")                      // New Ingridient
+	r.HandleFunc("/ingridient/new/variation", variationOfIngridient_New).Methods("POST") // New VariationOfIngridient
+	r.HandleFunc("/ingridients/category/new", categoryOfIngridients_New).Methods("POST") // New CategoryOfIngridients
+	r.HandleFunc("/ingridients/categories", categoryOfIngridients_Show)                  // All CategoryOfIngridients
+	r.HandleFunc("/ingridients/category/{id}", categoryOfIngridients_Show)               // Show CategoryOfIngridients
 
 	http.Handle("/", r)
 	http.ListenAndServe(":3000", nil)
@@ -39,7 +39,7 @@ func main() {
 }
 
 // New Ingridient
-func newIngridient(w http.ResponseWriter, r *http.Request) {
+func ingridient_New(w http.ResponseWriter, r *http.Request) {
 
 	var answer []models.Ingridient
 	r.ParseForm()
@@ -47,8 +47,7 @@ func newIngridient(w http.ResponseWriter, r *http.Request) {
 	f := r.Form
 	name := f.Get("name")
 	json.Marshal(answer)
-	//answer, err = models.NewIngridient(name)
-	answer, err = models.NewIngridient(name)
+	answer, err = models.Ingridient_New(name)
 	if err != nil {
 		log.Print(err)
 		http.Error(w, http.StatusText(500), 500)
@@ -66,15 +65,15 @@ func newIngridient(w http.ResponseWriter, r *http.Request) {
 }
 
 // New IngridientsCategory
-func newIngridientsCategory(w http.ResponseWriter, r *http.Request) {
+func categoryOfIngridients_New(w http.ResponseWriter, r *http.Request) {
 
-	var answer []models.IngridientsCategory
+	var answer []models.CategoryOfIngridients
 	r.ParseForm()
 	err := r.ParseForm()
 	f := r.Form
 	name := f.Get("name")
 	json.Marshal(answer)
-	answer, err = models.NewIngridientsCategory(name)
+	answer, err = models.CategoryOfIngridients_New(name)
 	if err != nil {
 		log.Print(err)
 		http.Error(w, http.StatusText(500), 500)
@@ -92,7 +91,7 @@ func newIngridientsCategory(w http.ResponseWriter, r *http.Request) {
 }
 
 // New Ingridient
-func newVariation(w http.ResponseWriter, r *http.Request) {
+func variationOfIngridient_New(w http.ResponseWriter, r *http.Request) {
 
 	var answer []models.Ingridient
 	r.ParseForm()
@@ -103,7 +102,7 @@ func newVariation(w http.ResponseWriter, r *http.Request) {
 	parentId, err := strconv.Atoi(f.Get("parent_id"))
 	json.Marshal(answer)
 	//answer, err = models.NewIngridient(name)
-	answer, err = models.NewVarition(name, parentId)
+	answer, err = models.Varition_New(name, parentId)
 	if err != nil {
 		log.Print(err)
 		http.Error(w, http.StatusText(500), 500)
@@ -121,7 +120,7 @@ func newVariation(w http.ResponseWriter, r *http.Request) {
 }
 
 // Show Ingridient[s]
-func showIngridients(w http.ResponseWriter, r *http.Request) {
+func ingridient_Show(w http.ResponseWriter, r *http.Request) {
 	var answer []models.Ingridient
 	vars := mux.Vars(r)
 	fmt.Println(vars)
@@ -131,9 +130,9 @@ func showIngridients(w http.ResponseWriter, r *http.Request) {
 		//TODO add paranoid error. Prevent DB request
 	}
 	if len(vars) == 0 {
-		answer, err = models.AllIngridients()
+		answer, err = models.Ingridient_All()
 	} else if len(vars) > 0 || id >= 0 {
-		answer, err = models.IngridientShow(id)
+		answer, err = models.Ingridient_Show(id)
 	}
 
 	if err != nil {
@@ -154,8 +153,8 @@ func showIngridients(w http.ResponseWriter, r *http.Request) {
 }
 
 // Show Ingridient[s] Categories
-func showIngridientsCategories(w http.ResponseWriter, r *http.Request) {
-	var answer []models.IngridientsCategory
+func categoryOfIngridients_Show(w http.ResponseWriter, r *http.Request) {
+	var answer []models.CategoryOfIngridients
 	vars := mux.Vars(r)
 	fmt.Println(vars)
 
@@ -164,9 +163,9 @@ func showIngridientsCategories(w http.ResponseWriter, r *http.Request) {
 		//TODO add paranoid error. Prevent DB request
 	}
 	if len(vars) == 0 {
-		answer, err = models.AllIngridientsCategories()
+		answer, err = models.CategoryOfIngridients_All()
 	} else if len(vars) > 0 || id >= 0 {
-		answer, err = models.IngridientsCategoryShow(id)
+		answer, err = models.CategoryOfIngridients_Show(id)
 	}
 
 	if err != nil {
