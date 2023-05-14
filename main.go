@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"main/models"
 	"net/http"
 	"strconv"
-
-	"main/models"
 
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
@@ -23,19 +22,18 @@ func main() {
 	}
 
 	r := mux.NewRouter()
-	r.HandleFunc("/db/{action}", execDB)
-	r.HandleFunc("/popdb/{count}/{minchild}/{maxchild}", populateDB)
-	r.HandleFunc("/ingridients", ingridient_Show)                                        // All Ingridient
-	r.HandleFunc("/ingridients/{id}", ingridient_Show)                                   // Show Ingridient
-	r.HandleFunc("/ingridient/new", ingridient_New).Methods("POST")                      // New Ingridient
-	r.HandleFunc("/ingridient/new/variation", variationOfIngridient_New).Methods("POST") // New VariationOfIngridient
+	r.HandleFunc("/ingridients/category/{id}", categoryOfIngridients_Show)               // Show CategoryOfIngridients
 	r.HandleFunc("/ingridients/category/new", categoryOfIngridients_New).Methods("POST") // New CategoryOfIngridients
 	r.HandleFunc("/ingridients/categories", categoryOfIngridients_Show)                  // All CategoryOfIngridients
-	r.HandleFunc("/ingridients/category/{id}", categoryOfIngridients_Show)               // Show CategoryOfIngridients
+	r.HandleFunc("/ingridient/new/variation", variationOfIngridient_New).Methods("POST") // New VariationOfIngridient
+	r.HandleFunc("/ingridient/new", ingridient_New).Methods("POST")                      // New Ingridient
+	r.HandleFunc("/ingridient/{id}", ingridient_Show)                                    // Show Ingridient
+	r.HandleFunc("/ingridients", ingridient_Show)                                        // All Ingridient
+	r.HandleFunc("/db/{action}", execDB)
+	r.HandleFunc("/popdb/{count}/{minchild}/{maxchild}", populateDB)
 
 	http.Handle("/", r)
 	http.ListenAndServe(":3000", nil)
-
 }
 
 // New Ingridient
@@ -44,8 +42,10 @@ func ingridient_New(w http.ResponseWriter, r *http.Request) {
 	var answer []models.Ingridient
 	r.ParseForm()
 	err := r.ParseForm()
+
 	f := r.Form
 	name := f.Get("name")
+
 	json.Marshal(answer)
 	answer, err = models.Ingridient_New(name)
 	if err != nil {
@@ -70,8 +70,10 @@ func categoryOfIngridients_New(w http.ResponseWriter, r *http.Request) {
 	var answer []models.CategoryOfIngridients
 	r.ParseForm()
 	err := r.ParseForm()
+
 	f := r.Form
 	name := f.Get("name")
+
 	json.Marshal(answer)
 	answer, err = models.CategoryOfIngridients_New(name)
 	if err != nil {
@@ -90,7 +92,7 @@ func categoryOfIngridients_New(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonResp)
 }
 
-// New Ingridient
+// New VariationOfIngridient
 func variationOfIngridient_New(w http.ResponseWriter, r *http.Request) {
 
 	var answer []models.Ingridient
@@ -129,11 +131,7 @@ func ingridient_Show(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		//TODO add paranoid error. Prevent DB request
 	}
-	if len(vars) == 0 {
-		answer, err = models.Ingridient_All()
-	} else if len(vars) > 0 || id >= 0 {
-		answer, err = models.Ingridient_Show(id)
-	}
+	answer, err = models.Ingridient_Show(id)
 
 	if err != nil {
 		log.Print(err)
@@ -162,11 +160,7 @@ func categoryOfIngridients_Show(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		//TODO add paranoid error. Prevent DB request
 	}
-	if len(vars) == 0 {
-		answer, err = models.CategoryOfIngridients_All()
-	} else if len(vars) > 0 || id >= 0 {
-		answer, err = models.CategoryOfIngridients_Show(id)
-	}
+	answer, err = models.CategoryOfIngridients_Show(id)
 
 	if err != nil {
 		log.Print(err)

@@ -93,7 +93,7 @@ func (v *Variations) Scan(value interface{}) error {
 	return json.Unmarshal(b, &v)
 }
 
-func (v *Categories) Scan(value interface{}) error {
+func (c *Categories) Scan(value interface{}) error {
 	var b []byte
 	switch t := value.(type) {
 	case []byte:
@@ -102,7 +102,7 @@ func (v *Categories) Scan(value interface{}) error {
 		return errors.New("unknown type")
 	}
 
-	return json.Unmarshal(b, &v)
+	return json.Unmarshal(b, &c)
 }
 
 func Get_Ingridients(request string) ([]Ingridient, error) {
@@ -193,7 +193,7 @@ func CategoryOfIngridients_New(name string) ([]CategoryOfIngridients, error) {
 	request := `
 		INSERT INTO IngridientsCategories(name)
 		VALUES ('` + name + `')
-		RETURNING *;;
+		RETURNING *;
 	`
 	return Get_CategoriesOfIngridients(request)
 }
@@ -227,57 +227,17 @@ func Ingridient_Show(id int) ([]Ingridient, error) {
 			FROM IngridientsToCategories 
 			WHERE ingridient_id = i.id
 		)
-		WHERE i.id = ` + strconv.Itoa(id) + `
+	`
+
+	if id > 0 {
+		request += `WHERE i.id = ` + strconv.Itoa(id)
+	}
+
+	request += `	
 		GROUP BY i.id;
 	`
 
 	return Get_Ingridients(request)
-}
-
-// All Ingridients with Variations
-func Ingridient_All() ([]Ingridient, error) {
-	request := `
-		SELECT
-			i.id,
-			i.name,
-			COALESCE(json_agg(DISTINCT v) FILTER (WHERE v.id IS NOT NULL), '[]') AS variations,
-			COALESCE(json_agg(DISTINCT ic) FILTER (WHERE ic.id IS NOT NULL), '[]') AS categories
-
-		FROM Ingridients i
-
-		LEFT JOIN (
-			SELECT DISTINCT id, ingridient_id, name
-			FROM IngridientsVariations
-			GROUP BY name, id
-		) AS v
-		ON v.ingridient_id = i.id
-
-		LEFT JOIN (
-			SELECT DISTINCT id, name
-			FROM IngridientsCategories
-			GROUP BY name, id
-		) AS ic
-		ON ic.id IN (
-			SELECT ingridient_category_id 
-			FROM IngridientsToCategories 
-			WHERE ingridient_id = i.id
-		)
-		GROUP BY i.id;
-	`
-	return Get_Ingridients(request)
-}
-
-// All IngridientsCategories // TODO not working, fix that
-func CategoryOfIngridients_All() ([]CategoryOfIngridients, error) {
-	request := `
-		SELECT
-			ic.id,
-			ic.name
-
-		FROM IngridientsCategories ic
-		ORDER BY ic.id;
-	`
-	return Get_CategoriesOfIngridients(request)
 }
 
 // Single CategoryOfIngridients
@@ -288,7 +248,12 @@ func CategoryOfIngridients_Show(id int) ([]CategoryOfIngridients, error) {
 			ic.name
 
 		FROM IngridientsCategories ic
-		WHERE ic.id = ` + strconv.Itoa(id) + `
+	`
+	if id > 0 {
+		request += `WHERE ic.id = ` + strconv.Itoa(id)
+	}
+
+	request += `
 		ORDER BY ic.id;
 	`
 	return Get_CategoriesOfIngridients(request)
