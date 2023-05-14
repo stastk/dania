@@ -29,6 +29,10 @@ func main() {
 	r.HandleFunc("/ingridient/new", ingridient_New).Methods("POST")                      // New Ingridient
 	r.HandleFunc("/ingridient/{id}", ingridient_Show)                                    // Show Ingridient
 	r.HandleFunc("/ingridients", ingridient_Show)                                        // All Ingridient
+
+	r.HandleFunc("/list/{id}", list_Show) // Show List
+	r.HandleFunc("/lists", list_Show)     // All Lists
+
 	r.HandleFunc("/db/{action}", execDB)
 	r.HandleFunc("/popdb/{count}/{minchild}/{maxchild}", populateDB)
 
@@ -119,6 +123,35 @@ func variationOfIngridient_New(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonResp)
+}
+
+// Show List[s]
+func list_Show(w http.ResponseWriter, r *http.Request) {
+	var answer []models.List
+	vars := mux.Vars(r)
+	fmt.Println(vars)
+
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		//TODO add paranoid error. Prevent DB request
+	}
+	answer, err = models.List_Show(id)
+
+	if err != nil {
+		log.Print(err)
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	jsonResp, err := json.Marshal(answer)
+	if err != nil {
+		log.Fatalf("Error happened in JSON marshal. Err: %s", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonResp)
+
 }
 
 // Show Ingridient[s]

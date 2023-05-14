@@ -53,7 +53,34 @@ var schema = `
 		FOREIGN KEY (ingridient_category_id) REFERENCES IngridientsCategories(id) ON UPDATE CASCADE
 	);
 
+	CREATE TABLE IF NOT EXISTS Units (
+		id serial PRIMARY KEY,
+		name VARCHAR(16) UNIQUE NOT NULL
+	);
+
+	CREATE TABLE IF NOT EXISTS Lists (
+		id serial PRIMARY KEY,
+		description VARCHAR(1024)
+	);
+
+	CREATE TABLE IF NOT EXISTS ListsIngridients (
+		id serial PRIMARY KEY,
+		list_id int NOT NULL,
+		FOREIGN KEY (list_id) REFERENCES Lists(id) ON UPDATE CASCADE,
+		ingridient_id int NOT NULL,
+		FOREIGN KEY (ingridient_id) REFERENCES Ingridients(id) ON UPDATE CASCADE,
+		ingridient_variation_id int NOT NULL,
+		FOREIGN KEY (ingridient_variation_id) REFERENCES IngridientsVariations(id) ON UPDATE CASCADE,
+		count int NOT NULL,
+		unit_id int NOT NULL,
+		FOREIGN KEY (unit_id) REFERENCES Units(id) ON UPDATE CASCADE
+	);
+
+
+
 `
+
+//TODO Add to Lists jsonb ListsIngridients instance
 
 // Ingridient and all Variations attached to it
 type Ingridient struct {
@@ -61,6 +88,16 @@ type Ingridient struct {
 	Name       string     `db:"name" json:"name"`
 	Variations Variations `db:"variations" json:"variations"`
 	Categories Categories `db:"categories" json:"categories"`
+}
+
+// IngridientInList
+type IngridientInList struct {
+	Id            int        `db:"id" json:"id"`
+	Name          string     `db:"name" json:"name"`
+	VariationName string     `db:"variation_name" json:"variation_name"`
+	Categories    Categories `db:"categories" json:"categories"`
+	Count         int        `db:"count" json:"count"`
+	Unit          string     `db:"unit" json:"unit"`
 }
 
 // Variation of specific Ingridient
@@ -76,8 +113,16 @@ type CategoryOfIngridients struct {
 	Name string `db:"name" json:"name"`
 }
 
+// List of Ingridients
+type List struct {
+	Id          int         `db:"id" json:"id"`
+	Description string      `db:"description" json:"description"`
+	Ingridients Ingridients `db:"ingridients" json:"ingridients"`
+}
+
 type Variations []VariationOfIngridient
 type Categories []CategoryOfIngridients
+type Ingridients []IngridientInList
 
 // Make the Variations type implement the sql.Scanner interface. This method
 // simply decodes a JSON-encoded value into the struct fields.
@@ -103,6 +148,48 @@ func (c *Categories) Scan(value interface{}) error {
 	}
 
 	return json.Unmarshal(b, &c)
+}
+
+func (c *List) Scan(value interface{}) error {
+	var b []byte
+	switch t := value.(type) {
+	case []byte:
+		b = t
+	default:
+		return errors.New("unknown type")
+	}
+
+	return json.Unmarshal(b, &c)
+}
+
+func Get_Lists(request string) ([]List, error) {
+	lists := []List{}
+	rows, err := DBpr.Queryx(request)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var record List
+		if err := rows.StructScan(&record); err != nil {
+			panic(err)
+		}
+
+		if err != nil {
+			log.Print(err)
+		}
+
+		lists = append(lists, record)
+
+	}
+
+	if err := rows.Err(); err != nil {
+		panic(err)
+	}
+
+	return lists, nil
 }
 
 func Get_Ingridients(request string) ([]Ingridient, error) {
@@ -198,7 +285,7 @@ func CategoryOfIngridients_New(name string) ([]CategoryOfIngridients, error) {
 	return Get_CategoriesOfIngridients(request)
 }
 
-// Single Ingridient with Variations
+// Show Ingridient with Variations
 func Ingridient_Show(id int) ([]Ingridient, error) {
 
 	request := `
@@ -240,7 +327,7 @@ func Ingridient_Show(id int) ([]Ingridient, error) {
 	return Get_Ingridients(request)
 }
 
-// Single CategoryOfIngridients
+// Show CategoryOfIngridients
 func CategoryOfIngridients_Show(id int) ([]CategoryOfIngridients, error) {
 	request := `
 		SELECT
@@ -257,6 +344,38 @@ func CategoryOfIngridients_Show(id int) ([]CategoryOfIngridients, error) {
 		ORDER BY ic.id;
 	`
 	return Get_CategoriesOfIngridients(request)
+}
+
+// Show Ingridient with Variations
+func List_Show(id int) ([]List, error) {
+
+	request := `
+		SELECT
+			l.id,
+			l.description,
+			COALESCE(json_agg(DISTINCT li) FILTER (WHERE li.id IS NOT NULL), '[]') AS ingridietnts
+		FROM Lists l
+		LEFT JOIN (
+			SELECT 
+				id, 
+				list_id, 
+				ingridient_id, 
+				ingridient_variation_id, 
+				count, 
+				unit_id
+			FROM ListsIngridients
+		) AS li ON li.list_id = l.id
+	`
+
+	if id > 0 {
+		request += `WHERE l.id = ` + strconv.Itoa(id)
+	}
+
+	request += `	
+		GROUP BY l.id;
+	`
+
+	return Get_Lists(request)
 }
 
 // Init/Drop tables #db
@@ -313,16 +432,74 @@ func ExecDB(action string) (string, error) {
 				(3, 2),
 				(4, 5),
 				(4, 6);
+
+			INSERT INTO Units
+				(name)
+			VALUES 
+				('g'),
+				('kg'),
+				('l'),
+				('lb'),
+				('piece');
+
+			INSERT INTO Lists
+				(description)
+			VALUES 
+				('Simple egg and milk omlet'),
+				('Just a burger with bread, cheese and meat'),
+				('Bread, cheese and meat... probably this is cheesburger'),
+				('Milkshake'),
+				('Some candy'),
+				('Desert with... idk...'),
+				('Soup'),
+				('Soup'),
+				(''),
+				('');
+
+			INSERT INTO ListsIngridients
+				(list_id, ingridient_id, ingridient_variation_id, count, unit_id )
+			VALUES 
+				(1, 1, 1, 1, 1),
+				(1, 2, 1, 1, 2),
+				(1, 3, 1, 1, 3),
+				(1, 4, 1, 1, 4),
+				(2, 2, 1, 1, 5),
+				(2, 3, 1, 1, 2),
+				(2, 4, 1, 1, 3),
+				(3, 5, 1, 1, 4),
+				(4, 2, 1, 1, 1),
+				(4, 3, 1, 1, 2),
+				(4, 1, 1, 1, 1),
+				(4, 1, 1, 1, 1),
+				(4, 4, 1, 1, 5),
+				(4, 2, 1, 1, 4),
+				(4, 2, 1, 1, 3),
+				(5, 3, 1, 1, 5),
+				(5, 4, 1, 1, 2),
+				(5, 6, 1, 1, 1),
+				(6, 5, 1, 1, 4),
+				(6, 6, 1, 2, 5),
+				(7, 3, 1, 1, 2),
+				(8, 2, 1, 1, 2),
+				(9, 4, 1, 1, 2),
+				(10, 1, 1, 1, 1),
+				(10, 2, 1, 2, 1),
+				(10, 6, 1, 2, 3),
+				(10, 5, 1, 1, 1);
 		`)
+
 		tx.Commit()
 		return "Create tables", err
 
 	} else if action == "drop" {
 		answer, err := DBpr.Queryx(`
+			DROP TABLE IF EXISTS ListsIngridients;
+			DROP TABLE IF EXISTS Lists;
 			DROP TABLE IF EXISTS IngridientsVariations;
 			DROP TABLE IF EXISTS IngridientsToCategories;
 			DROP TABLE IF EXISTS IngridientsCategories;
 			DROP TABLE IF EXISTS Ingridients;
+			DROP TABLE IF EXISTS Units;
 		`)
 		if err != nil {
 			return "", err
