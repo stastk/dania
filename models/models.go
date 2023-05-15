@@ -71,13 +71,12 @@ var schema = `
 		FOREIGN KEY (ingridient_id) REFERENCES Ingridients(id) ON UPDATE CASCADE,
 		ingridient_variation_id int NOT NULL,
 		FOREIGN KEY (ingridient_variation_id) REFERENCES IngridientsVariations(id) ON UPDATE CASCADE,
+		ingridient_variation_name VARCHAR(50) NOT NULL,
 		count int NOT NULL,
 		unit_id int NOT NULL,
-		FOREIGN KEY (unit_id) REFERENCES Units(id) ON UPDATE CASCADE
+		FOREIGN KEY (unit_id) REFERENCES Units(id) ON UPDATE CASCADE,
+		unit_name VARCHAR(16) NOT NULL
 	);
-
-
-
 `
 
 //TODO Add to Lists jsonb ListsIngridients instance
@@ -138,6 +137,18 @@ func (v *Variations) Scan(value interface{}) error {
 	return json.Unmarshal(b, &v)
 }
 
+func (i *Ingridients) Scan(value interface{}) error {
+	var b []byte
+	switch t := value.(type) {
+	case []byte:
+		b = t
+	default:
+		return errors.New("unknown type")
+	}
+
+	return json.Unmarshal(b, &i)
+}
+
 func (c *Categories) Scan(value interface{}) error {
 	var b []byte
 	switch t := value.(type) {
@@ -150,7 +161,7 @@ func (c *Categories) Scan(value interface{}) error {
 	return json.Unmarshal(b, &c)
 }
 
-func (c *List) Scan(value interface{}) error {
+func (l *List) Scan(value interface{}) error {
 	var b []byte
 	switch t := value.(type) {
 	case []byte:
@@ -159,7 +170,7 @@ func (c *List) Scan(value interface{}) error {
 		return errors.New("unknown type")
 	}
 
-	return json.Unmarshal(b, &c)
+	return json.Unmarshal(b, &l)
 }
 
 func Get_Lists(request string) ([]List, error) {
@@ -353,7 +364,7 @@ func List_Show(id int) ([]List, error) {
 		SELECT
 			l.id,
 			l.description,
-			COALESCE(json_agg(DISTINCT li) FILTER (WHERE li.id IS NOT NULL), '[]') AS ingridietnts
+			COALESCE(json_agg(DISTINCT li) FILTER (WHERE li.id IS NOT NULL), '[]') AS ingridients
 		FROM Lists l
 		LEFT JOIN (
 			SELECT 
@@ -410,6 +421,13 @@ func ExecDB(action string) (string, error) {
 				('Pepper', 3),
 				('Red hot', 3),
 				('Spicy pepper', 3),
+				('Goat milk', 6),
+				('Milk powder', 6),
+				('Natural sugar', 5),
+				('Stevia', 5),
+				('Big onion', 4),
+				('Purple TOR onion', 4),
+				('Just glass, not a sugar', 5),
 				('Dr.Pepper', 3);
 
 			INSERT INTO IngridientsCategories
@@ -457,35 +475,55 @@ func ExecDB(action string) (string, error) {
 				('');
 
 			INSERT INTO ListsIngridients
-				(list_id, ingridient_id, ingridient_variation_id, count, unit_id )
+				(list_id, ingridient_id, ingridient_variation_id, ingridient_variation_name, count, unit_id, unit_name)
 			VALUES 
-				(1, 1, 1, 1, 1),
-				(1, 2, 1, 1, 2),
-				(1, 3, 1, 1, 3),
-				(1, 4, 1, 1, 4),
-				(2, 2, 1, 1, 5),
-				(2, 3, 1, 1, 2),
-				(2, 4, 1, 1, 3),
-				(3, 5, 1, 1, 4),
-				(4, 2, 1, 1, 1),
-				(4, 3, 1, 1, 2),
-				(4, 1, 1, 1, 1),
-				(4, 1, 1, 1, 1),
-				(4, 4, 1, 1, 5),
-				(4, 2, 1, 1, 4),
-				(4, 2, 1, 1, 3),
-				(5, 3, 1, 1, 5),
-				(5, 4, 1, 1, 2),
-				(5, 6, 1, 1, 1),
-				(6, 5, 1, 1, 4),
-				(6, 6, 1, 2, 5),
-				(7, 3, 1, 1, 2),
-				(8, 2, 1, 1, 2),
-				(9, 4, 1, 1, 2),
-				(10, 1, 1, 1, 1),
-				(10, 2, 1, 2, 1),
-				(10, 6, 1, 2, 3),
-				(10, 5, 1, 1, 1);
+				(1, 6, 1, 'Goat milk',  10, 1, 'g'),
+				(1, 5, 2, 'Stevia',  1, 2, 'kg'),
+				(1, 4, 1, 'Big onion',  2, 3, 'l'),
+				(1, 3, 2, 'Chilli pepper',  1, 4, 'lb'),
+				(1, 2, 1, 'Salt of the sea',  4, 5, 'piece'),
+				(2, 1, 1, 'Ganash of the north',  100, 1, 'g'),
+				(2, 2, 1, 'Salt of the sea',  3, 2, 'kg'),
+				(2, 3, 2, 'Chilli pepper',  13, 3, 'l'),
+				(2, 4, 1, 'Big onion',  100, 4, 'lb'),
+				(2, 5, 3, 'Just glass, not a sugar',  33, 5, 'piece'),
+				(3, 6, 2, 'Milk powder',  4000, 1, 'g'),
+				(4, 1, 2, 'Ganash of the south',  200, 2, 'kg'),
+				(4, 2, 1, 'Salt of the sea',  10, 3, 'l'),
+				(5, 3, 2, 'Chilli pepper',  2, 4, 'lb'),
+				(5, 4, 2, 'Purple TOR onion',  5, 5, 'piece'),
+				(5, 5, 1, 'Natural sugar',  6, 1, 'g'),
+				(5, 6, 2, 'Milk powder',  2000, 2, 'kg'),
+				(5, 5, 3, 'Just glass, not a sugar',  10, 3, 'l'),
+				(5, 4, 1, 'Big onion',  15, 4, 'lb'),
+				(5, 3, 2, 'Chilli pepper',  10, 5, 'piece'),
+				(5, 2, 1, 'Salt of the sea',  93, 1, 'g'),
+				(5, 1, 1, 'Ganash of the north',  100, 2, 'kg'),
+				(5, 2, 1, 'Salt of the sea',  450, 3, 'l'),
+				(5, 3, 3, 'Pepper',  40, 4, 'lb'),
+				(5, 4, 1, 'Big onion',  500, 5, 'piece'),
+				(5, 5, 2, 'Stevia',  400, 1, 'g'),
+				(6, 6, 2, 'Milk powder',  90, 2, 'kg'),
+				(6, 5, 2, 'Stevia',  900, 3, 'l'),
+				(6, 4, 2, 'Purple TOR onion',  20, 4, 'lb'),
+				(6, 3, 1, 'Pepper of the Iron Man',  48, 5, 'piece'),
+				(6, 2, 1, 'Salt of the sea',  600, 1, 'g'),
+				(6, 1, 3, 'Ganash of the west',  200, 2, 'kg'),
+				(7, 2, 1, 'Salt of the sea',  400, 3, 'l'),
+				(7, 3, 2, 'Chilli pepper',  300, 4, 'lb'),
+				(7, 4, 1, 'Big onion',  100, 5, 'piece'),
+				(8, 5, 2, 'Stevia',  750, 1, 'g'),
+				(8, 6, 1, 'Goat milk',  1, 2, 'kg'),
+				(8, 1, 2, 'Ganash of the north',  1, 3, 'l'),
+				(8, 2, 1, 'Salt of the sea',  1, 4, 'lb'),
+				(8, 3, 2, 'Chilli pepper',  1, 5, 'piece'),
+				(8, 4, 1, 'Big onion',  60, 2, 'kg'),
+				(8, 5, 2, 'Stevia',  85, 3, 'l'),
+				(8, 6, 2, 'Milk powder',  35, 4, 'lb'),
+				(9, 1, 2, 'Ganash of the north',  110, 5, 'piece'),
+				(10, 2, 1, 'Salt of the sea',  25, 2, 'kg'),
+				(10, 3, 2, 'Chilli pepper',  92, 1, 'g'),
+				(10, 4, 1, 'Big onion',  1, 4, 'lb');
 		`)
 
 		tx.Commit()
