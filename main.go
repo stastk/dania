@@ -50,7 +50,10 @@ func embededList(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		//TODO add paranoid error. Prevent DB request
 	}
-	answer, err = models.List_Show(list_id)
+
+	if list_id > 0 {
+		answer, err = models.List_Show(list_id)
+	}
 
 	if err != nil {
 		log.Print(err)
@@ -61,7 +64,7 @@ func embededList(w http.ResponseWriter, r *http.Request) {
 	list_html := `
 		<style>
 			body{
-				padding: 0;
+				padding: 100px 630px;
 				margin: 0;
 			}
 			.list table,
@@ -85,9 +88,6 @@ func embededList(w http.ResponseWriter, r *http.Request) {
 				-webkit-border-horizontal-spacing: 0;
 				-webkit-border-vertical-spacing: 0;
 			}
-			th, td {
-				display: inline;
-			}
 			.list{
 				background: #ffffff;
 				border-radius: 4px;
@@ -95,6 +95,7 @@ func embededList(w http.ResponseWriter, r *http.Request) {
 				display: block;
 				font-family: Arial, sans-serif;
 				border: 1px solid #eee;
+				padding: 16px;
 			}
 			.list .description{
 				padding: 16px 8px;
@@ -106,12 +107,26 @@ func embededList(w http.ResponseWriter, r *http.Request) {
 				width: 100%;
 				font-size: 18px;
 			}
-			tr:hover{
-				background: red;
+			tr:hover td{
+				background: #efefef;
 			}
 			.list td{
-				padding: 0 8px;
 				border: 0px solid;
+			}
+			.list td:first-of-type{
+				border-radius: 6px 0 0 6px;
+			}
+			.list td:last-of-type{
+				border-radius: 0 6px 6px 0;
+			}
+			.list td.ingridient{
+				padding: 0 8px;
+			}
+			.list td.count{
+				ax-width: 100px;
+				min-width: 64px;
+				width: 100px;
+				padding: 12px 0;
 			}
 			.line{
 				display: flex;
@@ -139,16 +154,34 @@ func embededList(w http.ResponseWriter, r *http.Request) {
 	i := 0
 
 	for ingridients_count := range answer[0].Ingridients {
-
-		for ingridients_count > i {
-			list_html += `<tr><td><div class="line"><span class="name">` + answer[0].Ingridients[i].VariationName + `</span><span class="dots"></span></div></td><td>` + strconv.Itoa(answer[0].Ingridients[i].Count) + ` ` + answer[0].Ingridients[i].UnitName + `</td></tr>`
+		// TODO use flex instead of table
+		for ingridients_count >= i {
+			list_html += `
+				<tr for="v_` + strconv.Itoa(answer[0].Ingridients[i].IngridientVariationId) + strconv.Itoa(answer[0].Ingridients[i].IngridientId) + strconv.Itoa(answer[0].Ingridients[i].Count) + `">
+					<td class="ingridient">
+						<label for="v_` + strconv.Itoa(answer[0].Ingridients[i].IngridientVariationId) + strconv.Itoa(answer[0].Ingridients[i].IngridientId) + strconv.Itoa(answer[0].Ingridients[i].Count) + `" class="line">
+							<input type="checkbox" id="v_` + strconv.Itoa(answer[0].Ingridients[i].IngridientVariationId) + strconv.Itoa(answer[0].Ingridients[i].IngridientId) + strconv.Itoa(answer[0].Ingridients[i].Count) + `">
+							<span class="name">` + answer[0].Ingridients[i].VariationName + `</span>
+							<span class="dots"></span>
+						</label>
+					</td>
+					<td class="count">
+						<strong>` + strconv.Itoa(answer[0].Ingridients[i].Count) + `</strong> ` + answer[0].Ingridients[i].UnitName + `
+					</td>
+				</tr>`
 			i++
 		}
 	}
 
 	list_html += `
-				</table>
-				<span class="description">` + answer[0].Description + `</span>
+		</table>
+	`
+
+	if len(answer[0].Description) > 0 {
+		list_html += `<span class="description">` + answer[0].Description + `</span>`
+	}
+
+	list_html += `
 			</div>
 		</body>
 	`
