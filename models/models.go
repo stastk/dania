@@ -91,12 +91,12 @@ type Ingridient struct {
 
 // IngridientInList
 type IngridientInList struct {
-	Id             int    `db:"id" json:"id"`
-	IngridientId   int    `db:"ingridient_id" json:"ingridient_id"`
-	IngridientName string `db:"ingridient_name" json:"ingridient_name"`
-	VariationName  string `db:"variation_name" json:"variation_name"`
-	Count          int    `db:"count" json:"count"`
-	UnitName       string `db:"unit_name" json:"unit_name"`
+	Id                    int    `db:"id" json:"id"`
+	IngridientId          int    `db:"ingridient_id" json:"ingridient_id"`
+	IngridientVariationId int    `db:"ingridient_variation_id" json:"ingridient_variation_id"`
+	VariationName         string `db:"ingridient_variation_name" json:"ingridient_variation_name"`
+	Count                 int    `db:"count" json:"count"`
+	UnitName              string `db:"unit_name" json:"unit_name"`
 }
 
 // Variation of specific Ingridient
