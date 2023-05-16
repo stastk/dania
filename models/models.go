@@ -91,12 +91,12 @@ type Ingridient struct {
 
 // IngridientInList
 type IngridientInList struct {
-	Id            int        `db:"id" json:"id"`
-	Name          string     `db:"name" json:"name"`
-	VariationName string     `db:"variation_name" json:"variation_name"`
-	Categories    Categories `db:"categories" json:"categories"`
-	Count         int        `db:"count" json:"count"`
-	Unit          string     `db:"unit" json:"unit"`
+	Id             int    `db:"id" json:"id"`
+	IngridientId   int    `db:"ingridient_id" json:"ingridient_id"`
+	IngridientName string `db:"ingridient_name" json:"ingridient_name"`
+	VariationName  string `db:"variation_name" json:"variation_name"`
+	Count          int    `db:"count" json:"count"`
+	UnitName       string `db:"unit_name" json:"unit_name"`
 }
 
 // Variation of specific Ingridient
@@ -298,7 +298,6 @@ func CategoryOfIngridients_New(name string) ([]CategoryOfIngridients, error) {
 
 // Show Ingridient with Variations
 func Ingridient_Show(id int) ([]Ingridient, error) {
-
 	request := `
 		SELECT
 			i.id,
@@ -357,23 +356,26 @@ func CategoryOfIngridients_Show(id int) ([]CategoryOfIngridients, error) {
 	return Get_CategoriesOfIngridients(request)
 }
 
-// Show Ingridient with Variations
+// Show List of Ingridients
 func List_Show(id int) ([]List, error) {
-
 	request := `
 		SELECT
 			l.id,
 			l.description,
 			COALESCE(json_agg(DISTINCT li) FILTER (WHERE li.id IS NOT NULL), '[]') AS ingridients
+
 		FROM Lists l
+		
 		LEFT JOIN (
 			SELECT 
 				id, 
 				list_id, 
 				ingridient_id, 
-				ingridient_variation_id, 
+				ingridient_variation_id,
+				ingridient_variation_name, 
 				count, 
-				unit_id
+				unit_id,
+				unit_name
 			FROM ListsIngridients
 		) AS li ON li.list_id = l.id
 	`
