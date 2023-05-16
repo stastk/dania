@@ -58,25 +58,103 @@ func embededList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	AddForm := `<h1>` + answer[0].Description + `</h1><table>`
+	list_html := `
+		<style>
+			body{
+				padding: 0;
+				margin: 0;
+			}
+			.list table,
+			.list thead,
+			.list tbody,
+			.list tfoot,
+			.list tr,
+			.list th,
+			.list td {
+				width: auto;
+				height: auto;
+				margin: 0;
+				padding: 0;
+				border: none;
+				border-collapse: inherit;
+				border-spacing: 0;
+				border-color: inherit;
+				vertical-align: inherit;
+				text-align: left;
+				font-weight: inherit;
+				-webkit-border-horizontal-spacing: 0;
+				-webkit-border-vertical-spacing: 0;
+			}
+			th, td {
+				display: inline;
+			}
+			.list{
+				background: #ffffff;
+				border-radius: 4px;
+				overflow: hidden;
+				display: block;
+				font-family: Arial, sans-serif;
+				border: 1px solid #eee;
+			}
+			.list .description{
+				padding: 16px 8px;
+				display: block;
+				color: #888;
+				text-align: center;
+			}
+			.list table{
+				width: 100%;
+				font-size: 18px;
+			}
+			tr:hover{
+				background: red;
+			}
+			.list td{
+				padding: 0 8px;
+				border: 0px solid;
+			}
+			.line{
+				display: flex;
+				align-items: center;
+			}
+			.line .dots{
+				background-image: linear-gradient(to right, black 33%, rgba(255,255,255,0) 0%);
+				background-position: bottom;
+				background-size: 3px 1px;
+				background-repeat: repeat-x;
+				height: 1px;
+				width: 100%;
+			}
+			.line .name{
+				display: flex;
+				color: #222;
+				flex: 0 0 auto;
+				flex-wrap: nowrap;
+				padding-right: 8px;
+			}
+		</style>
+		<div class="list">
+			<table>`
 
 	i := 0
 
 	for ingridients_count := range answer[0].Ingridients {
 
 		for ingridients_count > i {
-			AddForm += `<tr><td>` + answer[0].Ingridients[i].VariationName + `</td><td>` + strconv.Itoa(answer[0].Ingridients[i].Count) + `</td><td>` + answer[0].Ingridients[i].UnitName + `</td></tr>`
-			//fmt.Println(answer[0].Ingridients[i].VariationName)
+			list_html += `<tr><td><div class="line"><span class="name">` + answer[0].Ingridients[i].VariationName + `</span><span class="dots"></span></div></td><td>` + strconv.Itoa(answer[0].Ingridients[i].Count) + ` ` + answer[0].Ingridients[i].UnitName + `</td></tr>`
 			i++
 		}
 	}
 
-	AddForm += `
-		</table>
+	list_html += `
+				</table>
+				<span class="description">` + answer[0].Description + `</span>
+			</div>
+		</body>
 	`
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprint(w, AddForm)
+	fmt.Fprint(w, list_html)
 	return
 }
 
