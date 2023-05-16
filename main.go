@@ -22,6 +22,7 @@ func main() {
 	}
 
 	r := mux.NewRouter()
+	r.HandleFunc("/mylist/{list_id}", embededList)                                       // Show CategoryOfIngridients
 	r.HandleFunc("/ingridients/category/{id}", categoryOfIngridients_Show)               // Show CategoryOfIngridients
 	r.HandleFunc("/ingridients/category/new", categoryOfIngridients_New).Methods("POST") // New CategoryOfIngridients
 	r.HandleFunc("/ingridients/categories", categoryOfIngridients_Show)                  // All CategoryOfIngridients
@@ -38,6 +39,45 @@ func main() {
 
 	http.Handle("/", r)
 	http.ListenAndServe(":3000", nil)
+}
+
+func embededList(w http.ResponseWriter, r *http.Request) {
+
+	var answer []models.List
+	vars := mux.Vars(r)
+	fmt.Println(vars)
+	list_id, err := strconv.Atoi(vars["list_id"])
+	if err != nil {
+		//TODO add paranoid error. Prevent DB request
+	}
+	answer, err = models.List_Show(list_id)
+
+	if err != nil {
+		log.Print(err)
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	AddForm := `<h1>` + answer[0].Description + `</h1><table>`
+
+	i := 0
+
+	for ingridients_count := range answer[0].Ingridients {
+
+		for ingridients_count > i {
+			AddForm += `<tr><td>` + answer[0].Ingridients[i].VariationName + `</td><td>` + strconv.Itoa(answer[0].Ingridients[i].Count) + `</td><td>` + answer[0].Ingridients[i].UnitName + `</td></tr>`
+			//fmt.Println(answer[0].Ingridients[i].VariationName)
+			i++
+		}
+	}
+
+	AddForm += `
+		</table>
+	`
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprint(w, AddForm)
+	return
 }
 
 // New Ingridient
