@@ -3,9 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"main/models"
+	"main/templates"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -22,6 +25,9 @@ func main() {
 	}
 
 	r := mux.NewRouter()
+
+	r.HandleFunc("/test", testReq) // Test
+
 	r.HandleFunc("/mylist/{list_id}", embededList)                                       // Show CategoryOfIngridients
 	r.HandleFunc("/ingridients/category/{id}", categoryOfIngridients_Show)               // Show CategoryOfIngridients
 	r.HandleFunc("/ingridients/category/new", categoryOfIngridients_New).Methods("POST") // New CategoryOfIngridients
@@ -30,9 +36,8 @@ func main() {
 	r.HandleFunc("/ingridient/new", ingridient_New).Methods("POST")                      // New Ingridient
 	r.HandleFunc("/ingridient/{id}", ingridient_Show)                                    // Show Ingridient
 	r.HandleFunc("/ingridients", ingridient_Show)                                        // All Ingridient
-
-	r.HandleFunc("/list/{id}", list_Show) // Show List
-	r.HandleFunc("/lists", list_Show)     // All Lists
+	r.HandleFunc("/list/{id}", list_Show)                                                // Show List
+	r.HandleFunc("/lists", list_Show)                                                    // All Lists
 
 	r.HandleFunc("/db/{action}", execDB)
 	r.HandleFunc("/popdb/{count}/{minchild}/{maxchild}", populateDB)
@@ -41,9 +46,39 @@ func main() {
 	http.ListenAndServe(":3000", nil)
 }
 
+const serverPort = 3000
+
+func testReq(w http.ResponseWriter, r *http.Request) {
+
+	//
+	requestURL := fmt.Sprintf("http://localhost:%d/mylist/1", serverPort)
+	req, err := http.NewRequest(http.MethodGet, requestURL, nil)
+	if err != nil {
+		fmt.Printf("client: could not create request: %s\n", err)
+		os.Exit(1)
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Printf("client: error making http request: %s\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("client: got response!\n")
+	fmt.Printf("client: status code: %d\n", res.StatusCode)
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		fmt.Printf("client: could not read response body: %s\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("client: response body: %s\n", resBody)
+}
+
 func embededList(w http.ResponseWriter, r *http.Request) {
 
 	var answer []models.List
+
 	vars := mux.Vars(r)
 	fmt.Println(vars)
 	list_id, err := strconv.Atoi(vars["list_id"])
@@ -61,131 +96,7 @@ func embededList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	list_html := `
-		<style>
-			body{
-				padding: 100px 630px;
-				margin: 0;
-			}
-			.list table,
-			.list thead,
-			.list tbody,
-			.list tfoot,
-			.list tr,
-			.list th,
-			.list td {
-				width: auto;
-				height: auto;
-				margin: 0;
-				padding: 0;
-				border: none;
-				border-collapse: inherit;
-				border-spacing: 0;
-				border-color: inherit;
-				vertical-align: inherit;
-				text-align: left;
-				font-weight: inherit;
-				-webkit-border-horizontal-spacing: 0;
-				-webkit-border-vertical-spacing: 0;
-			}
-			.list{
-				background: #ffffff;
-				border-radius: 4px;
-				overflow: hidden;
-				display: block;
-				font-family: Arial, sans-serif;
-				border: 1px solid #eee;
-				padding: 16px;
-			}
-			.list .description{
-				padding: 16px 8px;
-				display: block;
-				color: #888;
-				text-align: center;
-			}
-			.list table{
-				width: 100%;
-				font-size: 18px;
-			}
-			tr:hover td{
-				background: #efefef;
-			}
-			.list td{
-				border: 0px solid;
-			}
-			.list td:first-of-type{
-				border-radius: 6px 0 0 6px;
-			}
-			.list td:last-of-type{
-				border-radius: 0 6px 6px 0;
-			}
-			.list td.ingridient{
-				padding: 0 8px;
-			}
-			.list td.count{
-				ax-width: 100px;
-				min-width: 64px;
-				width: 100px;
-				padding: 12px 0;
-			}
-			.line{
-				display: flex;
-				align-items: center;
-			}
-			.line .dots{
-				background-image: linear-gradient(to right, black 33%, rgba(255,255,255,0) 0%);
-				background-position: bottom;
-				background-size: 3px 1px;
-				background-repeat: repeat-x;
-				height: 1px;
-				width: 100%;
-			}
-			.line .name{
-				display: flex;
-				color: #222;
-				flex: 0 0 auto;
-				flex-wrap: nowrap;
-				padding-right: 8px;
-			}
-		</style>
-		<div class="list">
-			<table>`
-
-	i := 0
-
-	for ingridients_count := range answer[0].Ingridients {
-		// TODO use flex instead of table
-		for ingridients_count >= i {
-			list_html += `
-				<tr for="v_` + strconv.Itoa(answer[0].Ingridients[i].IngridientVariationId) + strconv.Itoa(answer[0].Ingridients[i].IngridientId) + strconv.Itoa(answer[0].Ingridients[i].Count) + `">
-					<td class="ingridient">
-						<label for="v_` + strconv.Itoa(answer[0].Ingridients[i].IngridientVariationId) + strconv.Itoa(answer[0].Ingridients[i].IngridientId) + strconv.Itoa(answer[0].Ingridients[i].Count) + `" class="line">
-							<input type="checkbox" id="v_` + strconv.Itoa(answer[0].Ingridients[i].IngridientVariationId) + strconv.Itoa(answer[0].Ingridients[i].IngridientId) + strconv.Itoa(answer[0].Ingridients[i].Count) + `">
-							<span class="name">` + answer[0].Ingridients[i].VariationName + `</span>
-							<span class="dots"></span>
-						</label>
-					</td>
-					<td class="count">
-						<strong>` + strconv.Itoa(answer[0].Ingridients[i].Count) + `</strong> ` + answer[0].Ingridients[i].UnitName + `
-					</td>
-				</tr>`
-			i++
-		}
-	}
-
-	list_html += `
-		</table>
-	`
-
-	if len(answer[0].Description) > 0 {
-		list_html += `<span class="description">` + answer[0].Description + `</span>`
-	}
-
-	list_html += `
-			</div>
-		</body>
-	`
-
+	list_html := templates.ShowList(answer)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprint(w, list_html)
 	return
